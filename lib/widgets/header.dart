@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
+import 'package:football_fraternity/utils/responsive.dart';
 
 class Header extends StatelessWidget {
   const Header({super.key});
@@ -11,14 +12,14 @@ class Header extends StatelessWidget {
         children: [
           Image.asset(
             'assets/images/logo.png',
-            height: 40,
+            height: (Responsive.isDesktop(context) || Responsive.isTablet(context)) ? 40 : 30,
           ),
-          const SizedBox(width: 10),
-          const Text(
-            'Football Fraternity Co, Ltd.',
+          SizedBox(width: (Responsive.isDesktop(context) || Responsive.isTablet(context)) ? 10 : 5),
+          Text(
+            'Football Fraternity Co, Ltd',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 20,
+              fontSize: (Responsive.isDesktop(context) || Responsive.isTablet(context)) ? 20 : 16,
             ),
           ),
         ],

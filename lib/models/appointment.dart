@@ -6,7 +6,11 @@ class Appointment {
   final String time;
   final String status;
   final String legalOfficerId;
+  final String legalOfficerName;
   final String clientId;
+  final String clientName;
+  final int duration;
+  final String location;
 
   const Appointment({
     required this.id,
@@ -16,6 +20,10 @@ class Appointment {
     required this.time,
     required this.status,
     required this.legalOfficerId,
+    required this.legalOfficerName,
     required this.clientId,
+    required this.clientName,
+    required this.duration,
+    required this.location,
   });
 }

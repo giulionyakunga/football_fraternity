@@ -1,6 +1,7 @@
 class Contract {
   final String id;
   final String footballerId;
+  final String footballerName;
   final String club;
   final DateTime startDate;
   final DateTime endDate;
@@ -11,6 +12,7 @@ class Contract {
   const Contract({
     required this.id,
     required this.footballerId,
+    required this.footballerName,
     required this.club,
     required this.startDate,
     required this.endDate,
@@ -23,6 +25,7 @@ class Contract {
   Contract copyWith({
     String? id,
     String? footballerId,
+    String? footballerName,
     String? club,
     DateTime? startDate,
     DateTime? endDate,
@@ -33,6 +36,7 @@ class Contract {
     return Contract(
       id: id ?? this.id,
       footballerId: footballerId ?? this.footballerId,
+      footballerName: footballerName ?? this.footballerName,
       club: club ?? this.club,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
