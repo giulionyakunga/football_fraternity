@@ -1,6 +1,6 @@
 class Footballer {
-  final String id;
-  final String name;
+  final int id;
+  final String fullName;
   final String position;
   final String club;
   final String nationality;
@@ -14,7 +14,7 @@ class Footballer {
 
   const Footballer({
     required this.id,
-    required this.name,
+    required this.fullName,
     required this.position,
     required this.club,
     required this.nationality,

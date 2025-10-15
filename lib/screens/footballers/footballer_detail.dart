@@ -8,8 +8,8 @@ class FootballerDetailScreen extends StatelessWidget {
   const FootballerDetailScreen({super.key});
 
   final Footballer footballer = const Footballer(
-    id: '1',
-    name: 'Kibu Denis',
+    id: 1,
+    fullName: 'Kibu Denis',
     position: 'Forward',
     club: 'Simba FC',
     nationality: 'Tanzanian',
@@ -44,7 +44,7 @@ class FootballerDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          footballer.name,
+                          footballer.fullName,
                           style: AppStyles.heading1.copyWith(
                             fontSize: 28,
                             color: AppColors.primary,
@@ -275,7 +275,7 @@ class FootballerDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    footballer.name,
+                    footballer.fullName,
                     style: AppStyles.heading1.copyWith(
                       fontSize: Responsive.isTablet(context) ? 24 : 22,
                     ),

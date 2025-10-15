@@ -26,7 +26,7 @@ class FootballerProvider with ChangeNotifier {
 
   List<Footballer> searchFootballers(String query) {
     return _footballers
-        .where((f) => f.name.toLowerCase().contains(query.toLowerCase()))
+        .where((f) => f.fullName.toLowerCase().contains(query.toLowerCase()))
         .toList();
   }
 }

@@ -5,13 +5,19 @@ import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
 
-class FootballersListScreen extends StatelessWidget {
+
+class FootballersListScreen extends StatefulWidget {
   const FootballersListScreen({super.key});
 
+  @override
+  State<FootballersListScreen> createState() => _FootballersListScreenState();
+}
+
+class _FootballersListScreenState extends State<FootballersListScreen> {
   final List<Footballer> footballers = const [
     Footballer(
-      id: '1',
-      name: 'Yazid Alpha',
+      id: 1,
+      fullName: 'Yazid Alpha',
       position: 'Forward',
       club: 'Azam FC',
       nationality: 'Tanzanian',
@@ -20,8 +26,8 @@ class FootballersListScreen extends StatelessWidget {
       imageUrl: 'assets/images/profile_placeholder.png',
     ),
     Footballer(
-      id: '2',
-      name: 'Kibu Denis',
+      id: 2,
+      fullName: 'Kibu Denis',
       position: 'Midfielder',
       club: 'Simba FC',
       nationality: 'Tanzanian',
@@ -30,8 +36,8 @@ class FootballersListScreen extends StatelessWidget {
       imageUrl: 'assets/images/profile_placeholder.png',
     ),
     Footballer(
-      id: '3',
-      name: 'John Bocco',
+      id: 3,
+      fullName: 'John Bocco',
       position: 'Striker',
       club: 'Simba FC',
       nationality: 'Tanzanian',
@@ -40,8 +46,8 @@ class FootballersListScreen extends StatelessWidget {
       imageUrl: 'assets/images/profile_placeholder.png',
     ),
     Footballer(
-      id: '4',
-      name: 'Mbwana Samatta',
+      id: 4,
+      fullName: 'Mbwana Samatta',
       position: 'Forward',
       club: 'Free Agent',
       nationality: 'Tanzanian',
@@ -50,8 +56,8 @@ class FootballersListScreen extends StatelessWidget {
       imageUrl: 'assets/images/profile_placeholder.png',
     ),
     Footballer(
-      id: '5',
-      name: 'Thomas Ulimwengu',
+      id: 5,
+      fullName: 'Thomas Ulimwengu',
       position: 'Midfielder',
       club: 'Young Africans SC',
       nationality: 'Tanzanian',
@@ -60,8 +66,8 @@ class FootballersListScreen extends StatelessWidget {
       imageUrl: 'assets/images/profile_placeholder.png',
     ),
     Footballer(
-      id: '6',
-      name: 'David Mwantika',
+      id: 6,
+      fullName: 'David Mwantika',
       position: 'Defender',
       club: 'Azam FC',
       nationality: 'Tanzanian',
@@ -385,8 +391,8 @@ class FootballersListScreen extends StatelessWidget {
         centerTitle: !Responsive.isDesktop(context),
       ),
       body: Responsive.isDesktop(context) 
-          ? _buildDesktopLayout()
-          : _buildMobileLayout(),
+      ? _buildDesktopLayout()
+      : _buildMobileLayout(),
       floatingActionButton: _buildFloatingActionButton(context),
     );
   }

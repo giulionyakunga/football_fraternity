@@ -15,7 +15,7 @@ class FootballerCard extends StatelessWidget {
         leading: CircleAvatar(
           backgroundImage: AssetImage(footballer.imageUrl),
         ),
-        title: Text(footballer.name),
+        title: Text(footballer.fullName),
         subtitle: Text('${footballer.position} • ${footballer.club}'),
         trailing: Chip(
           label: Text(

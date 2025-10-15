@@ -4,6 +4,8 @@ import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
 import 'dart:async';
 
+import 'package:go_router/go_router.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -80,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDesktopLayout() {
+  Widget _buildDesktopLayout(BuildContext context) {
     return Column(
       children: [
         // Hero Section with Slideshow
@@ -124,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMobileLayout() {
+  Widget _buildMobileLayout(BuildContext context) {
     return Column(
       children: [
         // Hero Section with Slideshow
@@ -648,6 +650,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: InkWell(
         onTap: () {
           Navigator.pushNamed(context, route);
+          // context.go(route);
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
@@ -723,8 +726,8 @@ class _HomeScreenState extends State<HomeScreen> {
               // Add top padding equal to navbar height so content doesn't hide under it
               padding: EdgeInsets.only(top: Responsive.isDesktop(context) ? 80 : 0),
               child: Responsive.isDesktop(context)
-                  ? _buildDesktopLayout()
-                  : _buildMobileLayout(),
+                  ? _buildDesktopLayout(context)
+                  : _buildMobileLayout(context),
             ),
           ),
 
