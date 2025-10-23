@@ -42,6 +42,7 @@ dependencies:
   mime: ^2.0.0
   http: ^1.5.0
   image_picker: ^1.2.0
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +73,7 @@ flutter:
     - assets/images/stadium1.jpg
     - assets/images/stadium2.jpg
     - assets/images/stadium3.jpg
+    - assets/images/footballer.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

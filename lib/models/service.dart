@@ -4,6 +4,7 @@ class Service {
   final String description;
   final String icon;
   final List<String> features;
+  final String formRoute;
 
   const Service({
     required this.id,
@@ -11,6 +12,7 @@ class Service {
     required this.description,
     required this.icon,
     required this.features,
+    required this.formRoute,
   });
 
   Service copyWith({
@@ -19,6 +21,7 @@ class Service {
     String? description,
     String? icon,
     List<String>? features,
+    String? formRoute,
   }) {
     return Service(
       id: id ?? this.id,
@@ -26,6 +29,7 @@ class Service {
       description: description ?? this.description,
       icon: icon ?? this.icon,
       features: features ?? this.features,
+      formRoute: formRoute ?? this.formRoute,
     );
   }
 }

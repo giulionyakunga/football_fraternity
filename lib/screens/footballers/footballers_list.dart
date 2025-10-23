@@ -1,9 +1,15 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:football_fraternity/env.dart';
 import 'package:football_fraternity/models/footballer.dart';
 import 'package:football_fraternity/widgets/footballer_card.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
+import 'package:http/http.dart' as http;
+import 'package:go_router/go_router.dart';
 
 
 class FootballersListScreen extends StatefulWidget {
@@ -14,111 +20,91 @@ class FootballersListScreen extends StatefulWidget {
 }
 
 class _FootballersListScreenState extends State<FootballersListScreen> {
-  final List<Footballer> footballers = const [
-    Footballer(
-      id: 1,
-      fullName: 'Yazid Alpha',
-      position: 'Forward',
-      club: 'Azam FC',
-      nationality: 'Tanzanian',
-      age: 25,
-      contractStatus: 'Active',
-      imageUrl: 'assets/images/profile_placeholder.png',
-    ),
-    Footballer(
-      id: 2,
-      fullName: 'Kibu Denis',
-      position: 'Midfielder',
-      club: 'Simba FC',
-      nationality: 'Tanzanian',
-      age: 23,
-      contractStatus: 'Expiring (30 days)',
-      imageUrl: 'assets/images/profile_placeholder.png',
-    ),
-    Footballer(
-      id: 3,
-      fullName: 'John Bocco',
-      position: 'Striker',
-      club: 'Simba FC',
-      nationality: 'Tanzanian',
-      age: 32,
-      contractStatus: 'Active',
-      imageUrl: 'assets/images/profile_placeholder.png',
-    ),
-    Footballer(
-      id: 4,
-      fullName: 'Mbwana Samatta',
-      position: 'Forward',
-      club: 'Free Agent',
-      nationality: 'Tanzanian',
-      age: 30,
-      contractStatus: 'Without Club',
-      imageUrl: 'assets/images/profile_placeholder.png',
-    ),
-    Footballer(
-      id: 5,
-      fullName: 'Thomas Ulimwengu',
-      position: 'Midfielder',
-      club: 'Young Africans SC',
-      nationality: 'Tanzanian',
-      age: 28,
-      contractStatus: 'Active',
-      imageUrl: 'assets/images/profile_placeholder.png',
-    ),
-    Footballer(
-      id: 6,
-      fullName: 'David Mwantika',
-      position: 'Defender',
-      club: 'Azam FC',
-      nationality: 'Tanzanian',
-      age: 26,
-      contractStatus: 'Active',
-      imageUrl: 'assets/images/profile_placeholder.png',
-    ),
-  ];
+  final ScrollController _scrollController = ScrollController();
+  int userId = 0;
+  List<Footballer> footballers = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFootballers();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+   Future<void> _fetchFootballers() async {
+    try {
+      final Uri uri = Uri.parse('${backend_url}api/footballers/');
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        final newItems = jsonList.map((json) => Footballer.fromJson(json)).toList();
+        setState(() {
+          footballers = newItems;
+        });
+      }
+    }  on SocketException catch (e) {
+      debugPrint('Network error occurred:');
+      debugPrint('- Exception type: ${e.runtimeType}');
+      debugPrint('- Message: ${e.message}');
+      
+      if (e.osError != null) {
+        debugPrint('  - Error number (errno): ${e.osError!.errorCode}');
+        debugPrint('  - OS message: ${e.osError!.message}');
+      }
+    }
+  }
 
   Widget _buildDesktopLayout() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Footballers Management',
-                    style: AppStyles.heading1.copyWith(
-                      fontSize: 36,
-                      color: AppColors.primary,
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      (userId == 0) ? 'Our Footballers' : 'Footballers Management',
+                      style: AppStyles.heading1.copyWith(
+                        fontSize: 36,
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Manage your football players and their contracts',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.black54,
+                    const SizedBox(height: 8),
+                     Text(
+                      (userId == 0) ? 'We manage the following football players and their contracts' : 'Manage your football players and their contracts',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: Colors.black54,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              _buildStatsOverview(),
-            ],
-          ),
-          const SizedBox(height: 40),
+                  ],
+                ),
+                _buildStatsOverview(),
+              ],
+            ),
+            const SizedBox(height: 40),
 
-          // Search and Filters
-          _buildSearchAndFilters(),
-          const SizedBox(height: 30),
+            // Search and Filters
+            // _buildSearchAndFilters(),
+            // const SizedBox(height: 30),
 
-          // Grid View for Desktop
-          Expanded(
-            child: GridView.builder(
+            // Grid View for Desktop
+            GridView.builder(
+              shrinkWrap: true, // Important for nested scrollable content
+              physics: const NeverScrollableScrollPhysics(), // Prevent nested scrolling
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 crossAxisSpacing: 20,
@@ -130,46 +116,49 @@ class _FootballersListScreenState extends State<FootballersListScreen> {
                 return FootballerCard(footballer: footballers[index]);
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildMobileLayout() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Section
-          Text(
-            'Footballers Management',
-            style: AppStyles.heading1.copyWith(
-              fontSize: 28,
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Section
+            Text(
+              (userId == 0) ? 'Our Footballers' : 'Footballers Management',
+              style: AppStyles.heading1.copyWith(
+                fontSize: 28,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Manage your football players and their contracts',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.black54,
+            const SizedBox(height: 8),
+            Text(
+              (userId == 0) ? 'We manage the following football players and their contracts' :'Manage your football players and their contracts',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black54,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // Stats Overview for Mobile
-          _buildMobileStats(),
-          const SizedBox(height: 20),
+            // Stats Overview for Mobile
+            _buildMobileStats(),
+            const SizedBox(height: 20),
 
-          // Search and Filters
-          _buildSearchAndFilters(),
-          const SizedBox(height: 20),
+            // Search and Filters
+            // _buildSearchAndFilters(),
+            // const SizedBox(height: 20),
 
-          // List View for Mobile
-          Expanded(
-            child: ListView.builder(
+            // List View for Mobile
+            ListView.builder(
+              shrinkWrap: true, // Important for nested scrollable content
+              physics: const NeverScrollableScrollPhysics(), // Prevent nested scrolling
               itemCount: footballers.length,
               itemBuilder: (context, index) {
                 return Container(
@@ -178,10 +167,14 @@ class _FootballersListScreenState extends State<FootballersListScreen> {
                 );
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  int countFootballersByContractStatus(List<Footballer> footballers, String contractStatus) {
+    return footballers.where((footballer) => footballer.contractStatus == contractStatus).length;
   }
 
   Widget _buildStatsOverview() {
@@ -194,13 +187,15 @@ class _FootballersListScreenState extends State<FootballersListScreen> {
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
-            _buildStatItem('6', 'Total Players', Icons.people),
+            _buildStatItem('${footballers.length}', 'Total Players', Icons.people),
             const SizedBox(width: 30),
-            _buildStatItem('4', 'Active Contracts', Icons.assignment_turned_in),
+            _buildStatItem('${countFootballersByContractStatus(footballers, "Active")}', 'Active Contracts', Icons.assignment_turned_in),
+           const SizedBox(width: 30),
+            _buildStatItem('${countFootballersByContractStatus(footballers, "Expired")}', 'Expired', Icons.warning),
             const SizedBox(width: 30),
-            _buildStatItem('1', 'Expiring Soon', Icons.warning),
+            _buildStatItem('${countFootballersByContractStatus(footballers, "Free Agent")}', 'Free Agents', Icons.person_outline),
             const SizedBox(width: 30),
-            _buildStatItem('1', 'Free Agents', Icons.person_outline),
+            _buildStatItem('${countFootballersByContractStatus(footballers, "On Loan")}', 'On Loan', Icons.free_breakfast),
           ],
         ),
       ),
@@ -220,16 +215,16 @@ class _FootballersListScreenState extends State<FootballersListScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('6', 'Total', Icons.people),
-                _buildStatItem('4', 'Active', Icons.assignment_turned_in),
+                _buildStatItem('${footballers.length}', 'Total Players', Icons.people),
+                _buildStatItem('${countFootballersByContractStatus(footballers, "Active")}', 'Active Contracts', Icons.assignment_turned_in),
               ],
             ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('1', 'Expiring', Icons.warning),
-                _buildStatItem('1', 'Free', Icons.person_outline),
+                _buildStatItem('${countFootballersByContractStatus(footballers, "Expired")}', 'Expired', Icons.warning),
+                _buildStatItem('${countFootballersByContractStatus(footballers, "Free Agent")}', 'Free Agents', Icons.person_outline),
               ],
             ),
           ],
@@ -366,7 +361,7 @@ class _FootballersListScreenState extends State<FootballersListScreen> {
   Widget _buildFloatingActionButton(BuildContext context) {
     return FloatingActionButton(
       onPressed: () {
-        Navigator.pushNamed(context, '/footballers/form');
+        context.go('/footballers/form');
       },
       backgroundColor: AppColors.primary,
       elevation: 4,
@@ -379,7 +374,7 @@ class _FootballersListScreenState extends State<FootballersListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Footballers Management',
+          (userId == 0) ? 'Our Footballers' : 'Footballers Management',
           style: TextStyle(
             fontSize: Responsive.isDesktop(context) ? 20 : 18,
             fontWeight: FontWeight.w600,
@@ -391,9 +386,9 @@ class _FootballersListScreenState extends State<FootballersListScreen> {
         centerTitle: !Responsive.isDesktop(context),
       ),
       body: Responsive.isDesktop(context) 
-      ? _buildDesktopLayout()
-      : _buildMobileLayout(),
-      floatingActionButton: _buildFloatingActionButton(context),
+          ? _buildDesktopLayout()
+          : _buildMobileLayout(),
+      floatingActionButton: (userId == 0) ? null : _buildFloatingActionButton(context),
     );
   }
 }

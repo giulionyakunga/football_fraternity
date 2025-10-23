@@ -4,9 +4,17 @@ import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
 import 'package:football_fraternity/widgets/drawer.dart';
 import 'package:football_fraternity/widgets/header.dart';
+import 'package:go_router/go_router.dart';
 
-class ServicesScreen extends StatelessWidget {
+class ServicesScreen extends StatefulWidget {
   const ServicesScreen({super.key});
+
+  @override
+  State<ServicesScreen> createState() => _ServicesScreenState();
+}
+
+class _ServicesScreenState extends State<ServicesScreen> {
+  int userId = 0;
 
   Widget _buildDesktopNavBar(BuildContext context) {
     return Container(
@@ -22,9 +30,10 @@ class ServicesScreen extends StatelessWidget {
           _buildNavLink(context, 'About Us', '/about-us'),
           _buildNavLink(context, 'Services', '/services'),
           _buildNavLink(context, 'Contacts', '/contacts'),
+          if(userId != 0)
           IconButton(
             icon: const Icon(Icons.account_circle, color: Colors.white),
-            onPressed: () => Navigator.pushNamed(context, '/profile'),
+            onPressed: () => context.go('/profile'),
           ),
         ],
       ),
@@ -37,7 +46,7 @@ class ServicesScreen extends StatelessWidget {
         horizontal: Responsive.isDesktop(context) ? 20 : 15,
       ),
       child: TextButton(
-        onPressed: () => Navigator.pushNamed(context, route),
+        onPressed: () => context.go(route),
         child: Text(
           text,
           style: TextStyle(
@@ -122,7 +131,7 @@ class ServicesScreen extends StatelessWidget {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              Navigator.pushNamed(context, '/legal-services');
+                              context.go('/legal-services');
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
@@ -215,7 +224,7 @@ class ServicesScreen extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/legal-services');
+                       context.go('/legal-services');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -279,7 +288,7 @@ class ServicesScreen extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.pushNamed(context, route);
+          context.go(route);
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
@@ -322,7 +331,7 @@ class ServicesScreen extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.pushNamed(context, route);
+          context.go(route);
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(

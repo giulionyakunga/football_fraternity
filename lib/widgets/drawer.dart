@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
+import 'package:go_router/go_router.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
+
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  int userId = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +42,7 @@ class AppDrawer extends StatelessWidget {
             ),
             title: const Text('Home'),
             onTap: () {
-              Navigator.popAndPushNamed(context, '/');
+              context.go('/');
             },
           ),
           ListTile(
@@ -44,7 +52,7 @@ class AppDrawer extends StatelessWidget {
             ),
             title: const Text('About Us'),
             onTap: () {
-              Navigator.popAndPushNamed(context, '/about-us');
+              context.go('/about-us');
             },
           ),
           ListTile(
@@ -54,7 +62,7 @@ class AppDrawer extends StatelessWidget {
             ),
             title: const Text('Services'),
             onTap: () {
-              Navigator.popAndPushNamed(context, '/services');
+              context.go('/services');
             },
           ),
           ListTile(
@@ -64,9 +72,10 @@ class AppDrawer extends StatelessWidget {
             ),
             title: const Text('Our Contacts'),
             onTap: () {
-              Navigator.popAndPushNamed(context, '/contacts');
+              context.go('/contacts');
             },
           ),
+          if(userId != 0)
           ListTile(
             leading: const Icon(
               Icons.message,
@@ -74,82 +83,87 @@ class AppDrawer extends StatelessWidget {
             ),
             title: const Text('Messages'),
             onTap: () {
-              Navigator.popAndPushNamed(context, '/messages');
+              context.go('/messages');
             },
           ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Footballers Management',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+          if(userId != 0)
+          Column(
+            children: [
+              const Divider(),
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Footballers Management',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
               ),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.people,
-              color: Colors.green,
-            ),
-            title: const Text('Footballers'),
-            onTap: () {
-              Navigator.popAndPushNamed(context, '/footballers');
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.assignment,
-              color: Colors.green
-            ),
-            title: const Text('Contracts'),
-            onTap: () {
-              Navigator.popAndPushNamed(context, '/contracts');
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.gavel,
-              color: Colors.green
-            ),
-            title: const Text('Legal Cases'),
-            onTap: () {
-              Navigator.popAndPushNamed(context, '/cases');
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.calendar_today,
-              color: Colors.green
-            ),
-            title: const Text('Appointments'),
-            onTap: () {
-              Navigator.popAndPushNamed(context, '/appointments');
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.attach_file,
-              color: Colors.green,
-            ),
-            title: const Text('Documents'),
-            onTap: () {
-              Navigator.popAndPushNamed(context, '/documents');
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(
-              Icons.exit_to_app,
-              color: Colors.red,
-            ),
-            title: const Text('Logout'),
-            onTap: () {
-              // Implement logout functionality
-              Navigator.pop(context);
-            },
-          ),
+              ListTile(
+                leading: const Icon(
+                  Icons.people,
+                  color: Colors.green,
+                ),
+                title: const Text('Footballers'),
+                onTap: () {
+                  context.go('/footballers');
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.assignment,
+                  color: Colors.green
+                ),
+                title: const Text('Contracts'),
+                onTap: () {
+                  context.go('/contracts');
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.gavel,
+                  color: Colors.green
+                ),
+                title: const Text('Legal Cases'),
+                onTap: () {
+                  context.go('/cases');
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.calendar_today,
+                  color: Colors.green
+                ),
+                title: const Text('Appointments'),
+                onTap: () {
+                  context.go('/appointments');
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.attach_file,
+                  color: Colors.green,
+                ),
+                title: const Text('Documents'),
+                onTap: () {
+                  context.go('/documents');
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(
+                  Icons.exit_to_app,
+                  color: Colors.red,
+                ),
+                title: const Text('Logout'),
+                onTap: () {
+                  // Implement logout functionality
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          )
         ],
       ),
     );

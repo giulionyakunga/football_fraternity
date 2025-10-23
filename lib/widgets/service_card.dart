@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:football_fraternity/models/service.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
+import 'package:go_router/go_router.dart';
 
 class ServiceCard extends StatelessWidget {
   final Service service;
@@ -61,12 +62,17 @@ class ServiceCard extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // Navigate to service request
+                  context.go(service.formRoute);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                 ),
-                child: const Text('Request Service'),
+                child: const Text(
+                    'Request Service',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
               ),
             ),
           ],

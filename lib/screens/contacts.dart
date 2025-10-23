@@ -4,9 +4,17 @@ import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
 import 'package:football_fraternity/widgets/drawer.dart';
 import 'package:football_fraternity/widgets/header.dart';
+import 'package:go_router/go_router.dart';
 
-class ContactsScreen extends StatelessWidget {
+class ContactsScreen extends StatefulWidget {
   const ContactsScreen({super.key});
+
+  @override
+  State<ContactsScreen> createState() => _ContactsScreenState();
+}
+
+class _ContactsScreenState extends State<ContactsScreen> {
+  int userId = 0;
 
   Widget _buildDesktopNavBar(BuildContext context) {
     return Container(
@@ -22,6 +30,7 @@ class ContactsScreen extends StatelessWidget {
           _buildNavLink(context, 'About Us', '/about-us'),
           _buildNavLink(context, 'Services', '/services'),
           _buildNavLink(context, 'Contacts', '/contacts'),
+          if(userId != 0)
           IconButton(
             icon: const Icon(Icons.account_circle, color: Colors.white),
             onPressed: () => Navigator.pushNamed(context, '/profile'),
@@ -37,7 +46,7 @@ class ContactsScreen extends StatelessWidget {
         horizontal: Responsive.isDesktop(context) ? 20 : 15,
       ),
       child: TextButton(
-        onPressed: () => Navigator.pushNamed(context, route),
+        onPressed: () => context.go(route),
         child: Text(
           text,
           style: TextStyle(

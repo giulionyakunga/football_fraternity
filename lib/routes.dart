@@ -13,11 +13,12 @@ import 'package:football_fraternity/screens/contracts/contracts_list.dart';
 import 'package:football_fraternity/screens/documents/document_detail.dart';
 import 'package:football_fraternity/screens/documents/document_upload.dart';
 import 'package:football_fraternity/screens/documents/documents_list.dart';
-import 'package:football_fraternity/screens/footballers/footballer_detail.dart';
+import 'package:football_fraternity/screens/footballers/footballer_details.dart';
 import 'package:football_fraternity/screens/footballers/footballer_form.dart';
 import 'package:football_fraternity/screens/footballers/footballers_list.dart';
 import 'package:football_fraternity/screens/legal_services/consultancy_form.dart';
 import 'package:football_fraternity/screens/legal_services/representation_form.dart';
+import 'package:football_fraternity/screens/legal_services/footballer_management_form.dart';
 import 'package:football_fraternity/screens/legal_services/services_list.dart';
 import 'package:football_fraternity/screens/main_screen.dart';
 import 'package:football_fraternity/screens/messages/messages_list.dart';
@@ -34,7 +35,6 @@ class Routes {
   static const String messages = '/messages';
   static const String profile = '/profile';
   static const String footballers = '/footballers';
-  static const String footballerDetail = '/footballers/detail';
   static const String footballerForm = '/footballers/form';
   static const String contracts = '/contracts';
   static const String contractDetail = '/contracts/detail';
@@ -49,6 +49,7 @@ class Routes {
   static const String legalServices = '/legal-services';
   static const String consultancyForm = '/legal-services/consultancy';
   static const String representationForm = '/legal-services/representation';
+  static const String footballerManagementForm = '/legal-services/footballer_management_form';
 
   static final all = {
     home: (context) => const MainScreen(),
@@ -60,7 +61,6 @@ class Routes {
     messages: (context) => MessagesListScreen(),
     profile: (context) => const ProfileScreen(),
     footballers: (context) => const FootballersListScreen(),
-    footballerDetail: (context) => const FootballerDetailScreen(),
     footballerForm: (context) => const FootballerFormScreen(),
     contracts: (context) => ContractsListScreen(),
     contractDetail: (context) => ContractDetailScreen(),
@@ -75,5 +75,6 @@ class Routes {
     legalServices: (context) => const LegalServicesListScreen(),
     consultancyForm: (context) => const ConsultancyFormScreen(),
     representationForm: (context) => const RepresentationFormScreen(),
+    footballerManagementForm: (context) => const FootballerManagementFormScreen(),
   };
 }

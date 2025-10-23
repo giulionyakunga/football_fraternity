@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:football_fraternity/screens/services.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
 import 'dart:async';
-
 import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int userId = 0;
   final List<String> slideImages = [
     'assets/images/stadium1.jpg',
     'assets/images/stadium2.jpg',
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
       color: AppColors.primary,
       padding: EdgeInsets.symmetric(
         horizontal: Responsive.isDesktop(context) ? 80 : 40,
-        vertical: 25,
+        vertical: 15,
       ),
       child: Row(
         children: [
@@ -54,9 +55,10 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildNavLink(context, 'About Us', '/about-us'),
           _buildNavLink(context, 'Services', '/services'),
           _buildNavLink(context, 'Contacts', '/contacts'),
+          if(userId != 0)
           IconButton(
             icon: const Icon(Icons.account_circle, color: Colors.white),
-            onPressed: () => Navigator.pushNamed(context, '/profile'),
+            onPressed: () => context.go('/profile'),
           ),
         ],
       ),
@@ -69,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
         horizontal: Responsive.isDesktop(context) ? 20 : 15,
       ),
       child: TextButton(
-        onPressed: () => Navigator.pushNamed(context, route),
+        onPressed: () => context.go(route),
         child: Text(
           text,
           style: TextStyle(
@@ -122,6 +124,71 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+
+        const SizedBox(height: 100),
+        // Call to Action Section
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary.withOpacity(0.9),
+                AppColors.primary.withOpacity(0.7),
+              ],
+            ),
+            // borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Need Custom Legal Assistance?',
+                style: AppStyles.heading2.copyWith(
+                  fontSize: 22,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Contact us for personalized legal solutions tailored to your specific needs.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  // Navigate to contact page
+                  context.go('/contacts');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 4,
+                ),
+                child: const Text(
+                  'Get In Touch',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -150,6 +217,70 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildFeaturesSection(),
               const SizedBox(height: 40),
               _buildStatsSection(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 50),
+        // Call to Action Section
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary.withOpacity(0.9),
+                AppColors.primary.withOpacity(0.7),
+              ],
+            ),
+            // borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Need Custom Legal Assistance?',
+                style: AppStyles.heading2.copyWith(
+                  fontSize: 22,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Contact us for personalized legal solutions tailored to your specific needs.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  // Navigate to contact page
+                  context.go('/contacts');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 4,
+                ),
+                child: const Text(
+                  'Get In Touch',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -239,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton(
-                      onPressed: () => Navigator.pushNamed(context, '/services'),
+                      onPressed: () => context.go('/services'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         padding: EdgeInsets.symmetric(
@@ -262,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     SizedBox(width: Responsive.isDesktop(context) ? 20 : Responsive.isTablet(context) ? 20 : 10),
                     OutlinedButton(
-                      onPressed: () => Navigator.pushNamed(context, '/contacts'),
+                      onPressed: () => context.go('/contacts'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
                         side: const BorderSide(color: Colors.white),
@@ -360,34 +491,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   context,
                   Icons.people,
                   'Footballers',
-                  'Manage player profiles and careers',
+                  (userId == 0) ? 'See our player profiles and careers' : 'Manage player profiles and careers',
                   AppColors.primary,
                   '/footballers',
                 ),
-                _buildActionCard(
-                  context,
-                  Icons.assignment,
-                  'Contracts',
-                  'Handle contract negotiations',
-                  Colors.orange[700]!,
-                  '/contracts',
-                ),
-                _buildActionCard(
-                  context,
-                  Icons.gavel,
-                  'Legal Cases',
-                  'Track legal proceedings',
-                  Colors.purple[700]!,
-                  '/cases',
-                ),
-                _buildActionCard(
-                  context,
-                  Icons.calendar_today,
-                  'Appointments',
-                  'Schedule meetings',
-                  Colors.teal[700]!,
-                  '/appointments',
-                ),
+                // _buildActionCard(
+                //   context,
+                //   Icons.assignment,
+                //   'Contracts',
+                //   'Handle contract negotiations',
+                //   Colors.orange[700]!,
+                //   '/contracts',
+                // ),
+                // _buildActionCard(
+                //   context,
+                //   Icons.gavel,
+                //   'Legal Cases',
+                //   'Track legal proceedings',
+                //   Colors.purple[700]!,
+                //   '/cases',
+                // ),
+                // _buildActionCard(
+                //   context,
+                //   Icons.calendar_today,
+                //   'Appointments',
+                //   'Schedule meetings',
+                //   Colors.teal[700]!,
+                //   '/appointments',
+                // ),
               ],
             ),
           ],
@@ -416,26 +547,26 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 20),
             _buildActivityItem(
               Icons.assignment_turned_in,
-              'New contract signed with Kibu Denis',
-              '2 hours ago',
+              'New contract signed with Ladack Chasambi',
+              '6 months ago',
+              Colors.green,
+            ),
+            _buildActivityItem(
+              Icons.assignment_turned_in,
+              'New contract signed with Muhsin Malima',
+              '6 months ago',
               Colors.green,
             ),
             _buildActivityItem(
               Icons.gavel,
               'Case update: Contract dispute with KMC FC',
-              '1 day ago',
+              '9 months ago',
               Colors.orange,
             ),
             _buildActivityItem(
-              Icons.calendar_today,
-              'Upcoming appointment with Legal Officer',
-              'Tomorrow at 10:00 AM',
-              Colors.blue,
-            ),
-            _buildActivityItem(
               Icons.people,
-              'New player registration: John Smith',
-              '3 days ago',
+              'New player registration: Cyprian Kipenye',
+              '1 year ago',
               Colors.purple,
             ),
           ],
@@ -649,8 +780,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.pushNamed(context, route);
-          // context.go(route);
+          context.go(route);
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
@@ -692,26 +822,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   return Scaffold(
-  //     appBar: null,
-  //     drawer: null,
-  //     body: SingleChildScrollView(
-  //       controller: _scrollController,
-  //       child: Column(
-  //         children: [
-  //           if (Responsive.isDesktop(context)) _buildDesktopNavBar(context),
-  //           Responsive.isDesktop(context) 
-  //               ? _buildDesktopLayout()
-  //               : _buildMobileLayout(),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -724,7 +834,7 @@ class _HomeScreenState extends State<HomeScreen> {
             controller: _scrollController,
             child: Padding(
               // Add top padding equal to navbar height so content doesn't hide under it
-              padding: EdgeInsets.only(top: Responsive.isDesktop(context) ? 80 : 0),
+              padding: EdgeInsets.only(top: Responsive.isDesktop(context) ? 60 : 0),
               child: Responsive.isDesktop(context)
                   ? _buildDesktopLayout(context)
                   : _buildMobileLayout(context),

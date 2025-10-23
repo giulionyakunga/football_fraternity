@@ -1,27 +1,180 @@
 import 'package:flutter/material.dart';
+import 'package:football_fraternity/env.dart';
+import 'package:football_fraternity/models/footballer.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
+import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:mime/mime.dart';
+import 'package:path/path.dart' as path;
+import 'package:go_router/go_router.dart';
 
-class FootballerFormScreen extends StatefulWidget {
-  const FootballerFormScreen({super.key});
+
+class FootballerForm2Screen extends StatefulWidget {
+  final Footballer footballer;
+
+  const FootballerForm2Screen({super.key, required this.footballer});
 
   @override
-  State<FootballerFormScreen> createState() => _FootballerFormScreenState();
+  State<FootballerForm2Screen> createState() => _FootballerForm2ScreenState();
 }
 
-class _FootballerFormScreenState extends State<FootballerFormScreen> {
+class _FootballerForm2ScreenState extends State<FootballerForm2Screen> {
+  int userId = 0;
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final GlobalKey _imagePickerKey = GlobalKey();
+  final _fullNameController = TextEditingController();
   final _positionController = TextEditingController();
   final _clubController = TextEditingController();
   final _nationalityController = TextEditingController();
   final _ageController = TextEditingController();
+  final _dateOfBirthController = TextEditingController();
+  final _heightController = TextEditingController();
+  final _weightController = TextEditingController();
   final _salaryController = TextEditingController();
   final _contractStartController = TextEditingController();
   final _contractEndController = TextEditingController();
+  final _matchesController = TextEditingController();
+  final _goalsController = TextEditingController();
+  final _assistsController = TextEditingController();
+  final _ratingController = TextEditingController();
   String _contractStatus = 'Active';
-  bool _isEditing = false;
+  XFile? _footballerImage;
+  Uint8List? _webImageBytes;
+  String? fileType;
+  bool _isLoading = false;
+  bool _isEditing = true;
+  final ScrollController _scrollController = ScrollController();
+
+   @override
+  void initState() {
+    super.initState();
+   
+    _fullNameController.text = widget.footballer.fullName;
+    _positionController.text = widget.footballer.position;
+    _clubController.text = widget.footballer.club;
+    _nationalityController.text = widget.footballer.nationality;
+    _ageController.text = '${widget.footballer.age}';
+    _dateOfBirthController.text = widget.footballer.dateOfBirth != null ? DateFormat('yyyy-MM-dd').format(widget.footballer.dateOfBirth!) : '';
+    _heightController.text = '${widget.footballer.height}';
+    _weightController.text = '${widget.footballer.weight}';
+    _salaryController.text = widget.footballer.salary;
+    _contractStatus = widget.footballer.contractStatus;
+    _contractStartController.text = widget.footballer.contractStart != null ? DateFormat('yyyy-MM-dd').format(widget.footballer.contractStart!) : '';
+    _contractEndController.text = widget.footballer.contractEnd != null ? DateFormat('yyyy-MM-dd').format(widget.footballer.contractEnd!) : '';
+    _matchesController.text = '${widget.footballer.matches}';
+    _goalsController.text = '${widget.footballer.goals}';
+    _assistsController.text = '${widget.footballer.assists}';
+    _ratingController.text = '${widget.footballer.rating}';
+  }
+
+  Future<DateTime?> _selectDate(BuildContext context, DateTime initialDate) async {
+    DateTime fiftyYearsAgo = DateTime.now().subtract(Duration(days: 25 * 365)); // 50 years ago
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: fiftyYearsAgo,
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      return picked;
+    } else {
+      return DateTime.now();
+    }
+  }
+
+  Widget _buildDatePicker(TextEditingController controller, String text, DateTime initialDate) {
+    return TextButton.icon(
+      onPressed: () async {
+        DateTime? picked = await _selectDate(context, initialDate);
+        String formattedDate = DateFormat('yyyy-MM-dd').format(picked!);
+        // Assign to the controller's text
+        setState(() {
+          controller.text = formattedDate;
+        });
+      },
+      icon: Icon(Icons.calendar_today, color: Colors.blue[800]),
+      label: Text(
+        controller.text.isEmpty
+            ? text
+            : controller.text,
+        style: TextStyle(
+          color: controller.text.isEmpty ? Colors.grey[600] : Colors.black,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        side: BorderSide(
+          color: controller.text.isEmpty ? Colors.grey[400]! : Colors.blue[800]!,
+          width: 1.5,
+        ),
+        backgroundColor: Colors.grey[200],
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+  final ImagePicker picker = ImagePicker();
+  try {
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      String? mimeType;
+      String fileExtension;
+
+      if (kIsWeb) {
+        // On web, use `image.name` instead of `image.path`
+        fileExtension = path.extension(image.name).toLowerCase();
+        mimeType = lookupMimeType(image.name);
+
+        // Read image as bytes for web
+        final bytes = await image.readAsBytes();
+        _webImageBytes = bytes;
+      } else {
+        fileExtension = path.extension(image.path).toLowerCase();
+        mimeType = lookupMimeType(image.path);
+      }
+
+      if (mimeType == null || !mimeType.startsWith('image/')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid file type. Please select a valid image.')),
+        );
+        return;
+      }
+
+      if (fileExtension != '.png' && fileExtension != '.jpg' && fileExtension != '.jpeg') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unsupported image format. Only PNG and JPEG are allowed.')),
+        );
+        return;
+      }
+
+      setState(() {
+        _footballerImage = image;
+        fileType = fileExtension;
+      });
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to pick image')),
+      );
+    }
+  }
+}
+
 
   Widget _buildDesktopLayout() {
     return Padding(
@@ -56,12 +209,13 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                                 ),
                               ),
                               child: CircleAvatar(
-                                radius: 70,
-                                backgroundColor: Colors.grey[200],
-                                backgroundImage: const AssetImage(
-                                    'assets/images/profile_placeholder.png'),
+                                  radius: 70,
+                                  backgroundColor: Colors.grey[200],
+                                  backgroundImage: _footballerImage == null
+                                      ? AssetImage('assets/images/footballer.png') as ImageProvider
+                                      : FileImage(File(_footballerImage!.path)),
+                                ),
                               ),
-                            ),
                             Positioned(
                               bottom: 8,
                               right: 8,
@@ -84,6 +238,7 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                                       color: Colors.white, size: 20),
                                   onPressed: () {
                                     // Implement image picker
+                                    _pickImage();
                                   },
                                 ),
                               ),
@@ -149,21 +304,28 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                           color: Colors.grey[600],
                         ),
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 3),
 
                       // Personal Information Section
-                      _buildSectionHeader('Personal Informationz', Icons.person),
-                      const SizedBox(height: 20),
+                      _buildSectionHeader('Personal Information', Icons.person),
+                      const SizedBox(height: 2),
                       _buildDesktopFormGrid(),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 3),
 
                       // Contract Information Section
                       _buildSectionHeader('Contract Details', Icons.assignment),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 2),
                       _buildContractDetails(),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 3),
+
+                      // Contract Information Section
+                      _buildSectionHeader('Performance Details', Icons.assignment),
+                      const SizedBox(height: 2),
+                      _buildPerformanceDetails(),
+
+                      const SizedBox(height: 4),
 
                       // Action Buttons
                       Row(
@@ -171,7 +333,7 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () {
-                                Navigator.pop(context);
+                                context.go('/footballers');
                               },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.grey[700],
@@ -203,7 +365,8 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                                 ),
                                 elevation: 2,
                               ),
-                              child: Text(
+                              child: _isLoading ? const CircularProgressIndicator() :
+                              Text(
                                 _isEditing ? 'Update Footballer' : 'Add Footballer',
                                 style: const TextStyle(
                                   fontSize: 16,
@@ -256,10 +419,11 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                           ),
                         ),
                         child: CircleAvatar(
-                          radius: 50,
+                          radius: 70,
                           backgroundColor: Colors.grey[200],
-                          backgroundImage: const AssetImage(
-                              'assets/images/profile_placeholder.png'),
+                          backgroundImage: _footballerImage == null
+                              ? AssetImage('assets/images/footballer.png') as ImageProvider
+                              : FileImage(File(_footballerImage!.path)),
                         ),
                       ),
                       Positioned(
@@ -277,6 +441,7 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                                 color: Colors.white, size: 16),
                             onPressed: () {
                               // Implement image picker
+                              _pickImage();
                             },
                           ),
                         ),
@@ -323,6 +488,10 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                     _buildSectionHeader('Contract Details', Icons.assignment),
                     const SizedBox(height: 16),
                     _buildContractDetails(),
+                    const SizedBox(height: 24),
+                    _buildSectionHeader('Performance Details', Icons.assignment),
+                    const SizedBox(height: 16),
+                    _buildPerformanceDetails(),
                     const SizedBox(height: 30),
                     SizedBox(
                       width: double.infinity,
@@ -354,7 +523,7 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.pop(context);
+                          context.go('/footballers');
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.grey[700],
@@ -382,16 +551,18 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      childAspectRatio: 2.5,
-      crossAxisSpacing: 20,
-      mainAxisSpacing: 20,
+      childAspectRatio: 5.0,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
       children: [
-        _buildFormField(_nameController, 'Full Name', Icons.person, true),
+        _buildFormField(_fullNameController, 'Full Name', Icons.person, true),
         _buildFormField(_positionController, 'Position', Icons.sports_soccer, true),
         _buildFormField(_clubController, 'Club', Icons.emoji_events, true),
         _buildFormField(_nationalityController, 'Nationality', Icons.flag, true),
-        _buildFormField(_ageController, 'Age', Icons.cake, true,
-            keyboardType: TextInputType.number),
+        _buildFormField(_ageController, 'Age', Icons.cake, true, keyboardType: TextInputType.number),
+        _buildDatePicker(_dateOfBirthController,  'Select Date Of Birth', DateTime.now().subtract(const Duration(days: 20 * 365))),
+        _buildFormField2(_heightController, 'Height', Icons.height, false, keyboardType: TextInputType.number),
+        _buildFormField2(_weightController, 'Weight', Icons.scale, false, keyboardType: TextInputType.number),
       ],
     );
   }
@@ -399,7 +570,7 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
   Widget _buildMobileFormFields() {
     return Column(
       children: [
-        _buildFormField(_nameController, 'Full Name', Icons.person, true),
+        _buildFormField(_fullNameController, 'Full Name', Icons.person, true),
         const SizedBox(height: 16),
         _buildFormField(_positionController, 'Position', Icons.sports_soccer, true),
         const SizedBox(height: 16),
@@ -407,8 +578,14 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
         const SizedBox(height: 16),
         _buildFormField(_nationalityController, 'Nationality', Icons.flag, true),
         const SizedBox(height: 16),
-        _buildFormField(_ageController, 'Age', Icons.cake, true,
-            keyboardType: TextInputType.number),
+        _buildFormField(_ageController, 'Age', Icons.cake, true, keyboardType: TextInputType.number),
+        const SizedBox(height: 16),
+        _buildDatePicker(_dateOfBirthController,  'Select Date Of Birth', DateTime.now().subtract(const Duration(days: 20 * 365))),
+        const SizedBox(height: 16),
+        _buildFormField2(_heightController, 'Height', Icons.height, false, keyboardType: TextInputType.number),
+        const SizedBox(height: 16),
+        _buildFormField2(_weightController, 'Weight', Icons.scale, false, keyboardType: TextInputType.number),
+        
       ],
     );
   }
@@ -421,22 +598,22 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            childAspectRatio: 2.5,
-            crossAxisSpacing: 20,
-            mainAxisSpacing: 20,
+            childAspectRatio: 5.0,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
             children: [
-              _buildFormField(_contractStartController, 'Contract Start', Icons.calendar_today, false),
-              _buildFormField(_contractEndController, 'Contract End', Icons.calendar_today, false),
-              _buildFormField(_salaryController, 'Salary', Icons.attach_money, false),
+              _buildDatePicker(_contractStartController,  'Select Contract Start Date', DateTime.now().subtract(const Duration(days: 1 * 365))),
+              _buildDatePicker(_contractEndController,  'Select Contract End Date', DateTime.now().add(const Duration(days: 1 * 365))),
+              _buildFormField(_salaryController, 'Salary', Icons.attach_money, false, keyboardType: TextInputType.number),
               _buildContractStatusDropdown(),
             ],
           ),
         ] else ...[
-          _buildFormField(_contractStartController, 'Contract Start', Icons.calendar_today, false),
+          _buildDatePicker(_contractStartController,  'Select Contract Start Date', DateTime.now().subtract(const Duration(days: 1 * 365))),
           const SizedBox(height: 16),
-          _buildFormField(_contractEndController, 'Contract End', Icons.calendar_today, false),
+          _buildDatePicker(_contractEndController,  'Select Contract End Date', DateTime.now().add(const Duration(days: 1 * 365))),
           const SizedBox(height: 16),
-          _buildFormField(_salaryController, 'Salary', Icons.attach_money, false),
+          _buildFormField(_salaryController, 'Salary', Icons.attach_money, false, keyboardType: TextInputType.number),
           const SizedBox(height: 16),
           _buildContractStatusDropdown(),
         ],
@@ -444,7 +621,38 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
     );
   }
 
-  Widget _buildFormField(TextEditingController controller, String label, IconData icon, bool isRequired,
+  Widget _buildPerformanceDetails() {
+    return Column(
+      children: [
+        if (Responsive.isDesktop(context)) ...[
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 5.0,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            children: [
+              _buildFormField(_matchesController, 'Matches', Icons.event, false, keyboardType: TextInputType.number),
+              _buildFormField(_goalsController, 'Goals', Icons.sports_soccer, false, keyboardType: TextInputType.number),
+              _buildFormField(_assistsController, 'Assists', Icons.accessibility, false, keyboardType: TextInputType.number),
+              _buildFormField2(_ratingController, 'Rating', Icons.star, false, keyboardType: TextInputType.number),
+            ],
+          ),
+        ] else ...[
+          _buildFormField(_matchesController, 'Matches', Icons.event, false, keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          _buildFormField(_goalsController, 'Goals', Icons.sports_soccer, false, keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          _buildFormField(_assistsController, 'Assists', Icons.accessibility, false, keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          _buildFormField2(_ratingController, 'Rating', Icons.star, false, keyboardType: TextInputType.number),
+        ],
+      ],
+    );
+  }
+
+    Widget _buildFormField(TextEditingController controller, String label, IconData icon, bool isRequired,
       {TextInputType keyboardType = TextInputType.text}) {
     return TextFormField(
       controller: controller,
@@ -466,17 +674,80 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       keyboardType: keyboardType,
-      validator: isRequired
-          ? (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter $label';
-              }
-              if (label == 'Age' && int.tryParse(value) == null) {
-                return 'Please enter a valid number';
-              }
-              return null;
+      validator: 
+        isRequired ? (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter $label';
+          }
+          if ((label == 'Age' || label == 'Height' || label == 'Weight' || label == 'Matches' || label == 'Goals' || label == 'Assists' || label == 'Rating') && int.tryParse(value) == null) {
+            return 'Please enter a valid number';
+          }
+          return null;
+        }
+        : (value) {
+          if (value == null || value.isEmpty) {
+            return null;
+          }
+          if ((label == 'Age' || label == 'Height' || label == 'Weight' || label == 'Matches' || label == 'Goals' || label == 'Assists' || label == 'Rating') && int.tryParse(value) == null) {
+            return 'Please enter a valid number';
+          }
+          return null;
+        },
+    );
+  }
+
+  Widget _buildFormField2(
+    TextEditingController controller, 
+    String label, 
+    IconData icon, 
+    bool isRequired,
+    {TextInputType keyboardType = TextInputType.text}
+  ) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: '$label${isRequired ? ' *' : ''}',
+        prefixIcon: Icon(icon, color: AppColors.primary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.grey),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.grey),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
+      keyboardType: keyboardType,
+      validator: 
+        isRequired ? (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter $label';
+          }
+          if ((label == 'Height' || label == 'Weight' || label == 'Rating') && int.tryParse(value) == null) {
+            final doubleValue = double.tryParse(value);
+            if (doubleValue == null) {
+              return 'Please enter a valid number';
             }
-          : null,
+          }
+          return null;
+        }
+        : (value) {
+          if (value == null || value.isEmpty) {
+            return null;
+          }
+          if ((label == 'Height' || label == 'Weight' || label == 'Rating') && int.tryParse(value) == null) {
+            final doubleValue = double.tryParse(value);
+            if (doubleValue == null) {
+              return 'Please enter a valid number 2';
+            }
+          }
+          return null;
+        },
     );
   }
 
@@ -622,19 +893,144 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
     );
   }
 
-  void _saveFootballer() {
+  Future<void> _saveFootballer() async {
+    // if (_footballerImage == null) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(content: Text('Please select footballer picture')),
+    //   );
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     Scrollable.ensureVisible(
+    //       _imagePickerKey.currentContext!,
+    //       duration: const Duration(milliseconds: 500),
+    //       curve: Curves.easeInOut,
+    //     );
+    //   });
+    //   return;
+    // }
 
+    final Map<String, dynamic> requestBody = {
+      'user_id': userId,
+      'id': widget.footballer.id,
+      'full_name': _fullNameController.text.trim(),
+      'position': _positionController.text.trim(),
+      'club': _clubController.text.trim(),
+      'nationality': _nationalityController.text.trim(),
+      'age': int.parse(_ageController.text.trim()),
+      'date_of_birth': _dateOfBirthController.text.trim(),
+      'height': double.parse(_heightController.text.trim()),
+      'weight': double.parse(_weightController.text.trim()),
+      'salary': _salaryController.text.trim(),
+      'contract_start': _contractStartController.text.trim(),
+      'contract_end': _contractEndController.text.trim(),
+      'contract_status': _contractStatus,
+      'matches': double.parse(_matchesController.text.trim()),
+      'goals': double.parse(_goalsController.text.trim()),
+      'assists': double.parse(_assistsController.text.trim()),
+      'rating': double.parse(_ratingController.text.trim()),
+      if (fileType != null) 'file_type': fileType,
+      if (_footballerImage != null) 'footballer_image': kIsWeb ? _webImageBytes : base64Encode(await File(_footballerImage!.path).readAsBytes()), 
+    };
+
+    try {
+      setState(() => _isLoading = true);
+
+      final Uri uri = Uri.parse('${backend_url}api/update_footballer');
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        if (response.body == "Footballer updated successfully!") {
+          // widget.refreshMethod();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Footballer ${_isEditing ? 'updated' : 'added'} successfully'),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+
+          context.go('/footballers');
+
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.body)),
+          );
+        }
+      } else if (response.statusCode == 302) {
+        _handleHTTPRedirect();
+      } else {
+        if(response.statusCode == 413){
+          _showSnackBar('Request failed: Image is Too Large');
+        } else {
+          _showSnackBar('Request failed: ${response.statusCode}');
+        }
+      }
+    } on SocketException catch (e) {
+        debugPrint('Network error occurred:');
+        debugPrint('- Exception type: ${e.runtimeType}');
+        debugPrint('- Message: ${e.message}');
+        
+        if (e.osError != null) {
+          debugPrint('  - Error number (errno): ${e.osError!.errorCode}');
+          debugPrint('  - OS message: ${e.osError!.message}');
+        }
+
+        _handleSocketException(e);
+      } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _handleHTTPRedirect() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Connection Error'),
+        content: const Text('Could not connect to the server. Please check your internet connection.'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
+  void _handleSocketException(SocketException e) {
+    if (e.osError?.errorCode == 7 || e.osError?.errorCode == 101 || e.osError?.errorCode == 111) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Connection Error'),
+          content: const Text('Could not connect to the server. Please check your internet connection.'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      );
+    } else {
+      _showSnackBar('Connection Error: ${e.message}');
+    }
+  }
+
+  void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Footballer ${_isEditing ? 'updated' : 'added'} successfully'),
-        backgroundColor: Colors.green[600],
+        content: Text(message),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
       ),
     );
-    Navigator.pop(context);
   }
 
   @override
@@ -653,22 +1049,38 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
         elevation: 0,
         centerTitle: !Responsive.isDesktop(context),
       ),
-      body: Responsive.isDesktop(context) 
-          ? _buildDesktopLayout()
-          : _buildMobileLayout(),
+      body: SingleChildScrollView(
+            controller: _scrollController,
+            child: Padding(
+              // Add top padding equal to navbar height so content doesn't hide under it
+              padding: EdgeInsets.only(top: Responsive.isDesktop(context) ? 80 : 0),
+              child: Responsive.isDesktop(context)
+                  ? _buildDesktopLayout()
+                  : _buildMobileLayout(),
+            ),
+          ),
     );
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _fullNameController.dispose();
     _positionController.dispose();
     _clubController.dispose();
     _nationalityController.dispose();
     _ageController.dispose();
+    _dateOfBirthController.dispose();
+    _heightController.dispose();
+    _weightController.dispose();
     _salaryController.dispose();
     _contractStartController.dispose();
     _contractEndController.dispose();
+    _scrollController.dispose();
+    _matchesController.dispose();
+    _goalsController.dispose();
+    _assistsController.dispose();
+    _ratingController.dispose();
+
     super.dispose();
   }
 }

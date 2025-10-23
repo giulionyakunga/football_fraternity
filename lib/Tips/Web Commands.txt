@@ -1,0 +1,25 @@
+
+flutter build web --release --pwa-strategy=none
+
+deleting flutter_service_worker.js file before deploying.
+web/flutter_service_worker.js
+
+add headers to prevent browser catching:
+sudo nano /etc/nginx/sites-available/default
+
+location / {
+    root /var/www/web;
+    index index.html;
+    try_files $uri $uri/ /index.html;
+    add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+}
+
+
+COPY
+scp -r build/web ubuntu@telabs.co.tz:~/
+
+
+sudo rm -r web/
+sudo mv ~/web/ ./
+sudo chown -R www-data:www-data /var/www/web
+sudo chmod -R 755 /var/www/web

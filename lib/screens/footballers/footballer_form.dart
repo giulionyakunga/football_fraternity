@@ -3,16 +3,16 @@ import 'package:football_fraternity/env.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
-
+import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
+import 'package:go_router/go_router.dart';
 
 
 class FootballerFormScreen extends StatefulWidget {
@@ -33,12 +33,17 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
   final _clubController = TextEditingController();
   final _nationalityController = TextEditingController();
   final _ageController = TextEditingController();
+  final _dateOfBirthController = TextEditingController();
+  final _heightController = TextEditingController();
+  final _weightController = TextEditingController();
   final _salaryController = TextEditingController();
   final _contractStartController = TextEditingController();
   final _contractEndController = TextEditingController();
+  final _matchesController = TextEditingController();
+  final _goalsController = TextEditingController();
+  final _assistsController = TextEditingController();
+  final _ratingController = TextEditingController();
   String _contractStatus = 'Active';
-  DateTime? _selectedContractStartDate;
-  DateTime? _selectedContractEndDate;
   XFile? _footballerImage;
   Uint8List? _webImageBytes;
   String? fileType;
@@ -46,12 +51,13 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
   bool _isEditing = false;
   final ScrollController _scrollController = ScrollController();
 
+  Future<DateTime?> _selectDate(BuildContext context, DateTime initialDate) async {
+    DateTime fiftyYearsAgo = DateTime.now().subtract(Duration(days: 25 * 365)); // 50 years ago
 
-  Future<DateTime?> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
+      initialDate: initialDate,
+      firstDate: fiftyYearsAgo,
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) {
@@ -61,26 +67,33 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
     }
   }
 
-  Widget _buildContractStartDatePicker() {
+  Widget _buildDatePicker(TextEditingController controller, String text, DateTime initialDate) {
     return TextButton.icon(
-      onPressed: () => _selectedContractStartDate = _selectDate(context) as DateTime?,
-      icon: Icon(Icons.calendar_today, color: Colors.orange[800]),
+      onPressed: () async {
+        DateTime? picked = await _selectDate(context, initialDate);
+        String formattedDate = DateFormat('yyyy-MM-dd').format(picked!);
+        // Assign to the controller's text
+        setState(() {
+          controller.text = formattedDate;
+        });
+      },
+      icon: Icon(Icons.calendar_today, color: Colors.blue[800]),
       label: Text(
-        _selectedContractStartDate == null
-            ? 'Select Contract Start Date'
-            : '${_selectedContractStartDate!.day}/${_selectedContractStartDate!.month}/${_selectedContractStartDate!.year}',
+        controller.text.isEmpty
+            ? text
+            : controller.text,
         style: TextStyle(
-          color: _selectedContractStartDate == null ? Colors.grey[600] : Colors.black,
+          color: controller.text.isEmpty ? Colors.grey[600] : Colors.black,
           fontWeight: FontWeight.w500,
         ),
       ),
       style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
         side: BorderSide(
-          color: _selectedContractStartDate == null ? Colors.grey[400]! : Colors.orange[800]!,
+          color: controller.text.isEmpty ? Colors.grey[400]! : Colors.blue[800]!,
           width: 1.5,
         ),
         backgroundColor: Colors.grey[200],
@@ -139,41 +152,6 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
 }
 
 
- Widget _buildImagePicker() {
-    return GestureDetector(
-      key: _imagePickerKey,
-      onTap: _pickImage,
-      child: Container(
-        height: Responsive.isDesktop(context) ? 300 : 200,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: _footballerImage != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: kIsWeb ? 
-                Image.memory(
-                  _webImageBytes!,
-                  fit: BoxFit.cover,
-                ) :
-                Image.file(
-                  File(_footballerImage!.path),
-                  fit: BoxFit.cover,
-                ),
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_photo_alternate, size: Responsive.isDesktop(context) ? 64 : 48),
-                  const SizedBox(height: 8),
-                  const Text('Add Footballer Image'),
-                ],
-              ),
-      ),
-    );
-  }
   Widget _buildDesktopLayout() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
@@ -207,12 +185,13 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                                 ),
                               ),
                               child: CircleAvatar(
-                                radius: 70,
-                                backgroundColor: Colors.grey[200],
-                                backgroundImage: const AssetImage(
-                                    'assets/images/profile_placeholder.png'),
+                                  radius: 70,
+                                  backgroundColor: Colors.grey[200],
+                                  backgroundImage: _footballerImage == null
+                                      ? AssetImage('assets/images/footballer.png') as ImageProvider
+                                      : FileImage(File(_footballerImage!.path)),
+                                ),
                               ),
-                            ),
                             Positioned(
                               bottom: 8,
                               right: 8,
@@ -235,6 +214,7 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                                       color: Colors.white, size: 20),
                                   onPressed: () {
                                     // Implement image picker
+                                    _pickImage();
                                   },
                                 ),
                               ),
@@ -293,8 +273,6 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // _buildImagePicker(),
-                      // const SizedBox(height: 16),
                       Text(
                         'Fill in the details below to ${_isEditing ? 'update' : 'add'} the footballer',
                         style: TextStyle(
@@ -316,6 +294,13 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                       const SizedBox(height: 2),
                       _buildContractDetails(),
 
+                      const SizedBox(height: 3),
+
+                      // Contract Information Section
+                      _buildSectionHeader('Performance Details', Icons.assignment),
+                      const SizedBox(height: 2),
+                      _buildPerformanceDetails(),
+
                       const SizedBox(height: 4),
 
                       // Action Buttons
@@ -324,7 +309,7 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () {
-                                Navigator.pop(context);
+                                context.go('/footballers');
                               },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.grey[700],
@@ -356,7 +341,8 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                                 ),
                                 elevation: 2,
                               ),
-                              child: Text(
+                              child: _isLoading ? const CircularProgressIndicator() :
+                              Text(
                                 _isEditing ? 'Update Footballer' : 'Add Footballer',
                                 style: const TextStyle(
                                   fontSize: 16,
@@ -409,10 +395,11 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                           ),
                         ),
                         child: CircleAvatar(
-                          radius: 50,
+                          radius: 70,
                           backgroundColor: Colors.grey[200],
-                          backgroundImage: const AssetImage(
-                              'assets/images/profile_placeholder.png'),
+                          backgroundImage: _footballerImage == null
+                              ? AssetImage('assets/images/footballer.png') as ImageProvider
+                              : FileImage(File(_footballerImage!.path)),
                         ),
                       ),
                       Positioned(
@@ -430,6 +417,7 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                                 color: Colors.white, size: 16),
                             onPressed: () {
                               // Implement image picker
+                              _pickImage();
                             },
                           ),
                         ),
@@ -476,6 +464,10 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                     _buildSectionHeader('Contract Details', Icons.assignment),
                     const SizedBox(height: 16),
                     _buildContractDetails(),
+                    const SizedBox(height: 24),
+                    _buildSectionHeader('Performance Details', Icons.assignment),
+                    const SizedBox(height: 16),
+                    _buildPerformanceDetails(),
                     const SizedBox(height: 30),
                     SizedBox(
                       width: double.infinity,
@@ -507,7 +499,7 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.pop(context);
+                          context.go('/footballers');
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.grey[700],
@@ -544,6 +536,9 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
         _buildFormField(_clubController, 'Club', Icons.emoji_events, true),
         _buildFormField(_nationalityController, 'Nationality', Icons.flag, true),
         _buildFormField(_ageController, 'Age', Icons.cake, true, keyboardType: TextInputType.number),
+        _buildDatePicker(_dateOfBirthController,  'Select Date Of Birth', DateTime.now().subtract(const Duration(days: 20 * 365))),
+        _buildFormField2(_heightController, 'Height', Icons.height, false, keyboardType: TextInputType.number),
+        _buildFormField2(_weightController, 'Weight', Icons.scale, false, keyboardType: TextInputType.number),
       ],
     );
   }
@@ -559,8 +554,14 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
         const SizedBox(height: 16),
         _buildFormField(_nationalityController, 'Nationality', Icons.flag, true),
         const SizedBox(height: 16),
-        _buildFormField(_ageController, 'Age', Icons.cake, true,
-            keyboardType: TextInputType.number),
+        _buildFormField(_ageController, 'Age', Icons.cake, true, keyboardType: TextInputType.number),
+        const SizedBox(height: 16),
+        _buildDatePicker(_dateOfBirthController,  'Select Date Of Birth', DateTime.now().subtract(const Duration(days: 20 * 365))),
+        const SizedBox(height: 16),
+        _buildFormField2(_heightController, 'Height', Icons.height, false, keyboardType: TextInputType.number),
+        const SizedBox(height: 16),
+        _buildFormField2(_weightController, 'Weight', Icons.scale, false, keyboardType: TextInputType.number),
+        
       ],
     );
   }
@@ -577,20 +578,51 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
             children: [
-              _buildDatePickerField(context, _contractStartController, 'Start Date', Icons.calendar_today, true),
-              _buildDatePickerField(context, _contractEndController, 'End Date', Icons.calendar_today, true),
-              _buildFormField(_salaryController, 'Salary', Icons.attach_money, false),
+              _buildDatePicker(_contractStartController,  'Select Contract Start Date', DateTime.now().subtract(const Duration(days: 1 * 365))),
+              _buildDatePicker(_contractEndController,  'Select Contract End Date', DateTime.now().add(const Duration(days: 1 * 365))),
+              _buildFormField(_salaryController, 'Salary', Icons.attach_money, false, keyboardType: TextInputType.number),
               _buildContractStatusDropdown(),
             ],
           ),
         ] else ...[
-          _buildFormField(_contractStartController, 'Contract Start', Icons.calendar_today, false),
+          _buildDatePicker(_contractStartController,  'Select Contract Start Date', DateTime.now().subtract(const Duration(days: 1 * 365))),
           const SizedBox(height: 16),
-          _buildFormField(_contractEndController, 'Contract End', Icons.calendar_today, false),
+          _buildDatePicker(_contractEndController,  'Select Contract End Date', DateTime.now().add(const Duration(days: 1 * 365))),
           const SizedBox(height: 16),
-          _buildFormField(_salaryController, 'Salary', Icons.attach_money, false),
+          _buildFormField(_salaryController, 'Salary', Icons.attach_money, false, keyboardType: TextInputType.number),
           const SizedBox(height: 16),
           _buildContractStatusDropdown(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPerformanceDetails() {
+    return Column(
+      children: [
+        if (Responsive.isDesktop(context)) ...[
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 5.0,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            children: [
+              _buildFormField(_matchesController, 'Matches', Icons.event, false, keyboardType: TextInputType.number),
+              _buildFormField(_goalsController, 'Goals', Icons.sports_soccer, false, keyboardType: TextInputType.number),
+              _buildFormField(_assistsController, 'Assists', Icons.accessibility, false, keyboardType: TextInputType.number),
+              _buildFormField2(_ratingController, 'Rating', Icons.star, false, keyboardType: TextInputType.number),
+            ],
+          ),
+        ] else ...[
+          _buildFormField(_matchesController, 'Matches', Icons.event, false, keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          _buildFormField(_goalsController, 'Goals', Icons.sports_soccer, false, keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          _buildFormField(_assistsController, 'Assists', Icons.accessibility, false, keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          _buildFormField2(_ratingController, 'Rating', Icons.star, false, keyboardType: TextInputType.number),
         ],
       ],
     );
@@ -618,30 +650,37 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       keyboardType: keyboardType,
-      validator: isRequired
-          ? (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter $label';
-              }
-              if (label == 'Age' && int.tryParse(value) == null) {
-                return 'Please enter a valid number';
-              }
-              return null;
-            }
-          : null,
+      validator: 
+        isRequired ? (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter $label';
+          }
+          if ((label == 'Age' || label == 'Height' || label == 'Weight' || label == 'Matches' || label == 'Goals' || label == 'Assists' || label == 'Rating') && int.tryParse(value) == null) {
+            return 'Please enter a valid number';
+          }
+          return null;
+        }
+        : (value) {
+          if (value == null || value.isEmpty) {
+            return null;
+          }
+          if ((label == 'Age' || label == 'Height' || label == 'Weight' || label == 'Matches' || label == 'Goals' || label == 'Assists' || label == 'Rating') && int.tryParse(value) == null) {
+            return 'Please enter a valid number';
+          }
+          return null;
+        },
     );
   }
 
-  Widget _buildDatePickerField(
-    BuildContext context,
-    TextEditingController controller,
-    String label,
-    IconData icon,
+  Widget _buildFormField2(
+    TextEditingController controller, 
+    String label, 
+    IconData icon, 
     bool isRequired,
+    {TextInputType keyboardType = TextInputType.text}
   ) {
     return TextFormField(
       controller: controller,
-      readOnly: true, // prevent manual typing
       decoration: InputDecoration(
         labelText: '$label${isRequired ? ' *' : ''}',
         prefixIcon: Icon(icon, color: AppColors.primary),
@@ -659,45 +698,32 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
-      validator: isRequired
-          ? (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please select $label';
-              }
-              return null;
+      keyboardType: keyboardType,
+      validator: 
+        isRequired ? (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter $label';
+          }
+          if ((label == 'Height' || label == 'Weight' || label == 'Rating') && int.tryParse(value) == null) {
+            final doubleValue = double.tryParse(value);
+            if (doubleValue == null) {
+              return 'Please enter a valid number';
             }
-          : null,
-      onTap: () async {
-        FocusScope.of(context).requestFocus(FocusNode()); // hide keyboard
-
-        DateTime? pickedDate = await showDatePicker(
-          context: context,
-          initialDate: DateTime.now(),
-          firstDate: DateTime(1900),
-          lastDate: DateTime(2100),
-          builder: (context, child) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.light(
-                  primary: AppColors.primary, // header background color
-                  onPrimary: Colors.white, // header text color
-                  onSurface: Colors.black, // body text color
-                ),
-                textButtonTheme: TextButtonThemeData(
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary, // button text color
-                  ),
-                ),
-              ),
-              child: child!,
-            );
-          },
-        );
-
-        if (pickedDate != null) {
-          controller.text = "${pickedDate.toLocal()}".split(' ')[0];
+          }
+          return null;
         }
-      },
+        : (value) {
+          if (value == null || value.isEmpty) {
+            return null;
+          }
+          if ((label == 'Height' || label == 'Weight' || label == 'Rating') && int.tryParse(value) == null) {
+            final doubleValue = double.tryParse(value);
+            if (doubleValue == null) {
+              return 'Please enter a valid number';
+            }
+          }
+          return null;
+        },
     );
   }
 
@@ -865,11 +891,18 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
       'position': _positionController.text.trim(),
       'club': _clubController.text.trim(),
       'nationality': _nationalityController.text.trim(),
-      'age': _ageController.text.trim(),
+      'age': int.parse(_ageController.text.trim()),
+      'date_of_birth': _dateOfBirthController.text.trim(),
+      'height': double.parse(_heightController.text.trim()),
+      'weight': double.parse(_weightController.text.trim()),
       'salary': _salaryController.text.trim(),
-      'contract_start': _selectedContractStartDate?.toIso8601String(),
-      'contract_end': _selectedContractEndDate?.toIso8601String(),
+      'contract_start': _contractStartController.text.trim(),
+      'contract_end': _contractEndController.text.trim(),
       'contract_status': _contractStatus,
+      'matches': double.parse(_matchesController.text.trim()),
+      'goals': double.parse(_goalsController.text.trim()),
+      'assists': double.parse(_assistsController.text.trim()),
+      'rating': double.parse(_ratingController.text.trim()),
       'file_type': fileType,
       'footballer_image': kIsWeb ? _webImageBytes : base64Encode(await File(_footballerImage!.path).readAsBytes()),
     };
@@ -887,11 +920,24 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
       if (response.statusCode == 200) {
         if (response.body == "Footballer added successfully!") {
           // widget.refreshMethod();
-          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Footballer ${_isEditing ? 'updated' : 'added'} successfully'),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+
+          context.go('/footballers');
+
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.body)),
+          );
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.body)),
-        );
       } else if (response.statusCode == 302) {
         _handleHTTPRedirect();
       } else {
@@ -919,23 +965,6 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
     } finally {
       setState(() => _isLoading = false);
     }
-
-
-
-
-
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Footballer ${_isEditing ? 'updated' : 'added'} successfully'),
-        backgroundColor: Colors.green[600],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
-    Navigator.pop(context);
   }
 
   void _handleHTTPRedirect() {
@@ -1016,10 +1045,17 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
     _clubController.dispose();
     _nationalityController.dispose();
     _ageController.dispose();
+    _dateOfBirthController.dispose();
+    _heightController.dispose();
+    _weightController.dispose();
     _salaryController.dispose();
     _contractStartController.dispose();
     _contractEndController.dispose();
     _scrollController.dispose();
+    _matchesController.dispose();
+    _goalsController.dispose();
+    _assistsController.dispose();
+    _ratingController.dispose();
 
     super.dispose();
   }
