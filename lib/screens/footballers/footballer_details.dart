@@ -17,7 +17,7 @@ class FootballerDetailsScreen extends StatefulWidget {
 
 class _FootballerDetailsScreenState extends State<FootballerDetailsScreen> {
   late Footballer footballer;
-  int userId = 0;
+  int userId = 1;
 
   @override
   void initState() {

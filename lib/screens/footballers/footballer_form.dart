@@ -52,7 +52,7 @@ class _FootballerFormScreenState extends State<FootballerFormScreen> {
   final ScrollController _scrollController = ScrollController();
 
   Future<DateTime?> _selectDate(BuildContext context, DateTime initialDate) async {
-    DateTime fiftyYearsAgo = DateTime.now().subtract(Duration(days: 25 * 365)); // 50 years ago
+    DateTime fiftyYearsAgo = DateTime.now().subtract(const Duration(days: 45 * 365)); // 50 years ago
 
     final DateTime? picked = await showDatePicker(
       context: context,
