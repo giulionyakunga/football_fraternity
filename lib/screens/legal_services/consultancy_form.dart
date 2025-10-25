@@ -1,7 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:football_fraternity/env.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:mime/mime.dart';
+import 'package:http/http.dart' as http;
 
 class ConsultancyFormScreen extends StatefulWidget {
   const ConsultancyFormScreen({super.key});
@@ -12,9 +18,136 @@ class ConsultancyFormScreen extends StatefulWidget {
 
 class _ConsultancyFormScreenState extends State<ConsultancyFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _phoneNumberController = TextEditingController();
+  final _emailController = TextEditingController();
   final _subjectController = TextEditingController();
   final _descriptionController = TextEditingController();
   String _consultancyType = 'Contract Review';
+  bool _isLoading = false;
+  bool _submitted = false;
+  String base64File = "";
+  String? fileType;
+  String? fileName;
+  
+  Future<void> _submitRequest() async { 
+
+    // Prepare the request body
+    final Map<String, dynamic> requestBody = {
+      'name': _nameController.text.trim(),
+      'phone_number': _phoneNumberController.text.trim(),
+      'email': _emailController.text.trim(),
+      'subject': _subjectController.text.trim(),
+      'description': _descriptionController.text.trim(),
+      'service_type': 'Legal Consultancy',
+      'consultancy_type': _consultancyType,
+      'file_type': fileType,
+      'file_name': fileName,
+      'file': base64File,
+    };
+
+    try {
+      setState(() => _isLoading = true);
+
+      final Uri uri = Uri.parse('${backend_url}api/submit_request');
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        if (response.body == "Request submitted successfully!") {
+          setState(() {
+            _submitted = true;
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Consultancy request submitted successfully'),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.body)),
+          );
+        }
+      } else if (response.statusCode == 302) {
+        _handleHTTPRedirect();
+      } else {
+        if(response.statusCode == 413){
+          _showSnackBar('Request failed: file is Too Large');
+        } else {
+          _showSnackBar('Request failed: ${response.statusCode}');
+        }
+      }
+    } on SocketException catch (e) {
+        debugPrint('Network error occurred:');
+        debugPrint('- Exception type: ${e.runtimeType}');
+        debugPrint('- Message: ${e.message}');
+        
+        if (e.osError != null) {
+          debugPrint('  - Error number (errno): ${e.osError!.errorCode}');
+          debugPrint('  - OS message: ${e.osError!.message}');
+        }
+
+        _handleSocketException(e);
+      } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _handleHTTPRedirect() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Connection Error'),
+        content: const Text('Could not connect to the server. Please check your internet connection.'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
+  void _handleSocketException(SocketException e) {
+    if (e.osError?.errorCode == 7 || e.osError?.errorCode == 101 || e.osError?.errorCode == 111) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Connection Error'),
+          content: const Text('Could not connect to the server. Please check your internet connection.'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      );
+    } else {
+      _showSnackBar('Connection Error: ${e.message}');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildDesktopLayout() {
     return Center(
@@ -176,7 +309,7 @@ class _ConsultancyFormScreenState extends State<ConsultancyFormScreen> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _consultancyType,
+            initialValue: _consultancyType,
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -188,7 +321,7 @@ class _ConsultancyFormScreenState extends State<ConsultancyFormScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
@@ -224,7 +357,123 @@ class _ConsultancyFormScreenState extends State<ConsultancyFormScreen> {
             },
           ),
           const SizedBox(height: 20),
-
+          // Name
+          Text(
+            'Name',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: Responsive.isDesktop(context) ? 16 : 15,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              hintText: 'Enter your name',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.grey),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.grey),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: Responsive.isDesktop(context) ? 18 : 16,
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter name';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+          // Phone Number
+          Text(
+            'Phone Number',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: Responsive.isDesktop(context) ? 16 : 15,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _phoneNumberController,
+            decoration: InputDecoration(
+              hintText: 'Enter your phone number',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.grey),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.grey),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.primary, width: 2),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: Responsive.isDesktop(context) ? 18 : 16,
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter phone number';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+          // Email
+          Text(
+            'Email',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: Responsive.isDesktop(context) ? 16 : 15,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _emailController,
+            decoration: InputDecoration(
+              hintText: 'Enter your email',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.grey),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.grey),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.primary, width: 2),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: Responsive.isDesktop(context) ? 18 : 16,
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter email';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
           // Subject
           Text(
             'Subject',
@@ -249,7 +498,7 @@ class _ConsultancyFormScreenState extends State<ConsultancyFormScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
@@ -264,7 +513,6 @@ class _ConsultancyFormScreenState extends State<ConsultancyFormScreen> {
             },
           ),
           const SizedBox(height: 20),
-
           // Description
           Text(
             'Detailed Description',
@@ -289,7 +537,7 @@ class _ConsultancyFormScreenState extends State<ConsultancyFormScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
               ),
               contentPadding: const EdgeInsets.all(16),
             ),
@@ -336,11 +584,36 @@ class _ConsultancyFormScreenState extends State<ConsultancyFormScreen> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
-                    onPressed: () {
+                    onPressed: () async {
                       // Implement file picker
+                      FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+                      if (result != null) {
+                        // Get the selected file
+                        PlatformFile platformFile = result.files.first;
+                        File file = File(platformFile.path!);
+
+                        setState(() {
+                          // Get the file's MIME type based on its extension
+                          fileType = lookupMimeType(platformFile.path!);
+                          fileName = platformFile.name;
+                          fileType ??= 'application/octet-stream';
+                        });
+
+                        // Read the file as bytes
+                        List<int> bytes = await file.readAsBytes();
+
+                        setState(() {
+                          // Encode the file as a base64 string (for non-web, you may use this)
+                          base64File = base64Encode(bytes);
+                        });
+                      } else {
+                        // Handle the case when the user cancels the file picker
+                        debugPrint('No file selected');
+                      }
                     },
                     icon: const Icon(Icons.attach_file, size: 20),
-                    label: const Text('Choose Files'),
+                    label: Text( (fileName != null) ? 'Selected: $fileName' : 'Choose Files'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[100],
                       foregroundColor: Colors.black87,
@@ -364,33 +637,26 @@ class _ConsultancyFormScreenState extends State<ConsultancyFormScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: _submitted ? null : () {
                 if (_formKey.currentState!.validate()) {
                   // Submit request
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Consultancy request submitted successfully'),
-                      backgroundColor: Colors.green[600],
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  );
-                  Navigator.pop(context);
+                  _submitRequest();
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                disabledBackgroundColor: _submitted ? AppColors.success : AppColors.primary,
+                backgroundColor: _submitted ? AppColors.success : AppColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
                 elevation: 2,
               ),
-              child: Text(
-                'Submit Request',
+              child: _isLoading ? const CircularProgressIndicator() :
+              Text(
+                _submitted ? 'Request Submitted' : 'Submit Consultancy Request',
                 style: TextStyle(
+                  color: Colors.white,
                   fontSize: Responsive.isDesktop(context) ? 18 : 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -470,6 +736,9 @@ class _ConsultancyFormScreenState extends State<ConsultancyFormScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _phoneNumberController.dispose();
+    _emailController.dispose();
     _subjectController.dispose();
     _descriptionController.dispose();
     super.dispose();

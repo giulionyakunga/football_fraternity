@@ -1,10 +1,18 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:football_fraternity/env.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
 import 'package:football_fraternity/widgets/drawer.dart';
 import 'package:football_fraternity/widgets/header.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
+
 
 class ContactsScreen extends StatefulWidget {
   const ContactsScreen({super.key});
@@ -15,6 +23,136 @@ class ContactsScreen extends StatefulWidget {
 
 class _ContactsScreenState extends State<ContactsScreen> {
   int userId = 0;
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _phoneNumberController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _messageController = TextEditingController();
+  bool _isLoading = false;
+  bool _submitted = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneNumberController.dispose();
+    _emailController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  
+  Future<void> _sendMessage() async { 
+
+    // Prepare the request body
+    final Map<String, dynamic> requestBody = {
+      'name': _nameController.text.trim(),
+      'phone_number': _phoneNumberController.text.trim(),
+      'email': _emailController.text.trim(),
+      'message': _messageController.text.trim(),
+    };
+
+    try {
+      setState(() => _isLoading = true);
+
+      final Uri uri = Uri.parse('${backend_url}api/send_message');
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        if (response.body == "Message sent successfully!") {
+          setState(() {
+            _submitted = true;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Your message has been sent successfully! We will get back to you within 24 hours.'),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.body)),
+          );
+        }
+      } else if (response.statusCode == 302) {
+        _handleHTTPRedirect();
+      } else {
+        if(response.statusCode == 413){
+          _showSnackBar('Request failed: file is Too Large');
+        } else {
+          _showSnackBar('Request failed: ${response.statusCode}');
+        }
+      }
+    } on SocketException catch (e) {
+        debugPrint('Network error occurred:');
+        debugPrint('- Exception type: ${e.runtimeType}');
+        debugPrint('- Message: ${e.message}');
+        
+        if (e.osError != null) {
+          debugPrint('  - Error number (errno): ${e.osError!.errorCode}');
+          debugPrint('  - OS message: ${e.osError!.message}');
+        }
+
+        _handleSocketException(e);
+      } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _handleHTTPRedirect() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Connection Error'),
+        content: const Text('Could not connect to the server. Please check your internet connection.'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
+  void _handleSocketException(SocketException e) {
+    if (e.osError?.errorCode == 7 || e.osError?.errorCode == 101 || e.osError?.errorCode == 111) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Connection Error'),
+          content: const Text('Could not connect to the server. Please check your internet connection.'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      );
+    } else {
+      _showSnackBar('Connection Error: ${e.message}');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildDesktopNavBar(BuildContext context) {
     return Container(
@@ -204,9 +342,46 @@ class _ContactsScreenState extends State<ContactsScreen> {
                               color: Colors.grey[600],
                             ),
                           ),
+
                           const SizedBox(height: 8),
-                          Text(
-                            'Uganda Street, Kijitonyama, Tanzania',
+
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.map),
+                            label: const Text("Open in Maps"),
+                            onPressed: () async {
+                              context.go('https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430');
+
+                              // final url = Uri.parse(Uri.encodeFull("https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430"));
+                              // if (await canLaunchUrl(url)) {
+                              //   await launchUrl(url);
+                              // }
+                            },
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.share),
+                            label: const Text("Share Location"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () async {
+                              const message = "Football Fraternity Head Office Location:\nWard: Kijitonyama, District: Kinondoni, Region: Dar es Salaam \nOpen in Maps (Link 1): https://maps.app.goo.gl/2VqqQ7387Xu5sXzHA \nOpen in Maps (Link 2): https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430";
+                              Share.share(message);
+
+                              const clipboardData = "Football Fraternity Head Office Location:\nWard: Kijitonyama, \nDistrict: Kinondoni, \nRegion: Dar es Salaam \nOpen in Maps (Link 1): https://maps.app.goo.gl/2VqqQ7387Xu5sXzHA \nOpen in Maps (Link 2): https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430";
+                              await Clipboard.setData(const ClipboardData(text: clipboardData));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Link copied to clipboard!')),
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 8),
+                          Text( 
+                            'Sikumwisho Street, Kijitonyama, Dar es Salaam, Tanzania',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -296,7 +471,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.location_on,
                         color: AppColors.primary,
                         size: 24,
@@ -308,7 +483,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   Container(
                     height: 200,
                     decoration: BoxDecoration(
@@ -325,7 +500,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             size: 40,
                             color: Colors.grey[500],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 6),
                           Text(
                             'Interactive Map',
                             style: TextStyle(
@@ -333,11 +508,48 @@ class _ContactsScreenState extends State<ContactsScreen> {
                               color: Colors.grey[600],
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 4),
+
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.map),
+                            label: const Text("Open in Maps"),
+                            onPressed: () async {
+                              context.go('https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430');
+
+                              // final url = Uri.parse(Uri.encodeFull("https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430"));
+                              // if (await canLaunchUrl(url)) {
+                              //   await launchUrl(url);
+                              // }
+                            },
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.share),
+                            label: const Text("Share Location"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () async {
+                              const message = "Football Fraternity Head Office Location:\nWard: Kijitonyama, District: Kinondoni, Region: Dar es Salaam \nOpen in Maps (Link 1): https://maps.app.goo.gl/2VqqQ7387Xu5sXzHA \nOpen in Maps (Link 2): https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430";
+                              Share.share(message);
+
+                              const clipboardData = "Football Fraternity Head Office Location:\nWard: Kijitonyama, \nDistrict: Kinondoni, \nRegion: Dar es Salaam \nOpen in Maps (Link 1): https://maps.app.goo.gl/2VqqQ7387Xu5sXzHA \nOpen in Maps (Link 2): https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430";
+                              await Clipboard.setData(const ClipboardData(text: clipboardData));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Link copied to clipboard!')),
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 4),
+                          
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'Uganda Street, Kijitonyama, Tanzania',
+                              'Sikumwisho Street, Kijitonyama, Dar es Salaam, Tanzania',
                               style: TextStyle(
                                 fontSize: Responsive.isTablet(context) ? 14 : 12,
                                 color: Colors.grey[600],
@@ -371,7 +583,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
             _buildContactItem(
               Icons.location_on,
               'Head Office',
-              'Sikumwisho Street, Kijitonyama, Tanzania',
+              'Sikumwisho Street, Kijitonyama, Dar es Salaam, Tanzania',
               Colors.blue[700]!,
             ),
             const SizedBox(height: 20),
@@ -385,7 +597,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
             _buildContactItem(
               Icons.email,
               'Email Address',
-              'info@footballfraternity.co.tz\n1yazidalpha@gmail.com',
+              '1yazidalpha@gmail.com',
               Colors.orange[700]!,
             ),
             const SizedBox(height: 20),
@@ -443,91 +655,109 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 
   Widget _buildContactForm(BuildContext context) {
-    return Card(
-      elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(30),
-        child: Column(
-          children: [
-            _buildFormField(
-              'Your Name',
-              Icons.person,
+    return 
+    Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Card(
+            elevation: 6,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 20),
-            _buildFormField(
-              'Your Email',
-              Icons.email,
-            ),
-            const SizedBox(height: 20),
-            _buildFormField(
-              'Subject',
-              Icons.subject,
-            ),
-            const SizedBox(height: 20),
-            TextFormField(
-              maxLines: 5,
-              decoration: InputDecoration(
-                labelText: 'Message',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.primary, width: 2),
-                ),
-                contentPadding: const EdgeInsets.all(16),
-              ),
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Your message has been sent successfully! We will get back to you within 24 hours.'),
-                      backgroundColor: Colors.green[600],
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
+            child: Padding(
+              padding: const EdgeInsets.all(30),
+              child: Column(
+                children: [
+                  _buildFormField(
+                    'Your Name',
+                    Icons.person,
+                    _nameController
+                  ),
+                  const SizedBox(height: 20),
+                  _buildFormField(
+                    'Your Phone Number',
+                    Icons.phone,
+                    _phoneNumberController
+                  ),
+                  const SizedBox(height: 20),
+                  _buildFormField(
+                    'Your Email',
+                    Icons.email,
+                    _emailController
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _messageController,
+                    maxLines: 5,
+                    decoration: InputDecoration(
+                      labelText: 'Message',
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Colors.grey),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Colors.grey),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppColors.primary, width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your message';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+
+                      onPressed: _submitted ? null : () {
+                        if (_formKey.currentState!.validate()) {
+                          // Send Message
+                          _sendMessage();
+                        }
+                      },
+
+                      style: ElevatedButton.styleFrom(
+                        disabledBackgroundColor: _submitted ? AppColors.success : AppColors.primary,
+                        backgroundColor: _submitted ? AppColors.success : AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: _isLoading ? const CircularProgressIndicator() : 
+                      Text(
+                        _submitted ? 'Message Sent' : 'Send Message',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
                   ),
-                  elevation: 2,
-                ),
-                child: const Text(
-                  'Send Message',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
+          )
+        ]
+      )
     );
   }
 
-  Widget _buildFormField(String label, IconData icon) {
+  Widget _buildFormField(String label, IconData icon, TextEditingController controller) {
     return TextFormField(
+      controller: controller,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: AppColors.primary),
@@ -548,6 +778,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
           vertical: 16,
         ),
       ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter $label';
+        }
+        return null;
+      },
     );
   }
 

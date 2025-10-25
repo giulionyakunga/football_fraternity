@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:football_fraternity/env.dart';
 import 'package:football_fraternity/models/footballer.dart';
-import 'package:football_fraternity/screens/footballers/footballer_details.dart';
 import 'package:go_router/go_router.dart';
 
 class FootballerCard extends StatelessWidget {
@@ -36,14 +35,14 @@ class FootballerCard extends StatelessWidget {
                         Text(
                           footballer.fullName,
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
                           '${footballer.position} • ${footballer.club}',
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             color: Colors.grey,
                           ),
                         ),
@@ -53,8 +52,12 @@ class FootballerCard extends StatelessWidget {
                   Chip(
                     label: Text(
                       footballer.contractStatus,
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white
+                      ),
                     ),
+                    labelPadding: const EdgeInsetsGeometry.all(0.2),
                     backgroundColor: _getStatusColor(footballer.contractStatus),
                   ),
                 ],

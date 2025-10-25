@@ -17,7 +17,7 @@ class FootballerDetailsScreen extends StatefulWidget {
 
 class _FootballerDetailsScreenState extends State<FootballerDetailsScreen> {
   late Footballer footballer;
-  int userId = 1;
+  int userId = 0;
 
   @override
   void initState() {
@@ -88,7 +88,8 @@ class _FootballerDetailsScreenState extends State<FootballerDetailsScreen> {
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
                                   onPressed: () {
-                                    context.go('/footballers/form2', extra: footballer);
+                                    // context.go('/footballers/form2', extra: footballer);
+                                    context.pushReplacement('/footballers/form2', extra: footballer);
                                   },
                                   icon: const Icon(Icons.edit, size: 20),
                                   label: const Text(
@@ -476,9 +477,8 @@ class _FootballerDetailsScreenState extends State<FootballerDetailsScreen> {
         _buildInfoItem('Nationality', footballer.nationality, Icons.flag),
         _buildInfoItem('Date of Birth', _formatDate(footballer.dateOfBirth), Icons.calendar_today),
         _buildInfoItem('Age', '${footballer.age} years', Icons.cake),
-        _buildInfoItem('Contract Status', footballer.contractStatus, Icons.assignment_turned_in),
-        _buildInfoItem('Height', '${footballer.height}', Icons.height),
-        _buildInfoItem('Weight', '${footballer.weight}', Icons.scale),
+        _buildInfoItem('Height', '${footballer.height}m', Icons.height),
+        _buildInfoItem('Weight', '${footballer.weight}kg', Icons.scale),
       ],
     );
   }
@@ -490,13 +490,13 @@ class _FootballerDetailsScreenState extends State<FootballerDetailsScreen> {
         const SizedBox(height: 12),
         _buildInfoItem('Nationality', footballer.nationality, Icons.flag),
         const SizedBox(height: 12),
+        _buildInfoItem('Date of Birth', _formatDate(footballer.dateOfBirth), Icons.calendar_today),
+        const SizedBox(height: 12),
         _buildInfoItem('Age', '${footballer.age} years', Icons.cake),
         const SizedBox(height: 12),
-        _buildInfoItem('Contract Status', footballer.contractStatus, Icons.assignment_turned_in),
+        _buildInfoItem('Height', '${footballer.height}m', Icons.height),
         const SizedBox(height: 12),
-        _buildInfoItem('Height', '${footballer.height}', Icons.height),
-        const SizedBox(height: 12),
-        _buildInfoItem('Weight', '${footballer.weight}', Icons.scale),
+        _buildInfoItem('Weight', '${footballer.weight}kg', Icons.scale),
       ],
     );
   }
@@ -750,7 +750,8 @@ class _FootballerDetailsScreenState extends State<FootballerDetailsScreen> {
           IconButton(
             icon: const Icon(Icons.edit, size: 22),
             onPressed: () {
-              context.go('/footballers/form2', extra: footballer);
+              // context.go('/footballers/form2', extra: footballer);
+              context.pushReplacement('/footballers/form2', extra: footballer);
             },
             tooltip: 'Edit Profile',
           ),

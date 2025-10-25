@@ -21,8 +21,8 @@ class FootballersListScreen extends StatefulWidget {
 
 class _FootballersListScreenState extends State<FootballersListScreen> {
   final ScrollController _scrollController = ScrollController();
-  int userId = 1;
-  List<Footballer> footballers = const [];
+  int userId = 0;
+  List<Footballer> footballers = [];
 
   @override
   void initState() {

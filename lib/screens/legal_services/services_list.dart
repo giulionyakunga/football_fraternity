@@ -86,7 +86,7 @@ class LegalServicesListScreen extends StatelessWidget {
         'Agent regulations',
         'Financial fair play',
       ],
-      formRoute: '/legal-services/representation',
+      formRoute: '/legal-services/consultancy',
     ),
   ];
 

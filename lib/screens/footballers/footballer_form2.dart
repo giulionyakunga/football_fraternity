@@ -561,8 +561,8 @@ class _FootballerForm2ScreenState extends State<FootballerForm2Screen> {
         _buildFormField(_nationalityController, 'Nationality', Icons.flag, true),
         _buildFormField(_ageController, 'Age', Icons.cake, true, keyboardType: TextInputType.number),
         _buildDatePicker(_dateOfBirthController,  'Select Date Of Birth', DateTime.now().subtract(const Duration(days: 20 * 365))),
-        _buildFormField2(_heightController, 'Height', Icons.height, false, keyboardType: TextInputType.number),
-        _buildFormField2(_weightController, 'Weight', Icons.scale, false, keyboardType: TextInputType.number),
+        _buildFormField2(_heightController, 'Height (m)', Icons.height, false, keyboardType: TextInputType.number),
+        _buildFormField2(_weightController, 'Weight (kg)', Icons.scale, false, keyboardType: TextInputType.number),
       ],
     );
   }
@@ -582,9 +582,9 @@ class _FootballerForm2ScreenState extends State<FootballerForm2Screen> {
         const SizedBox(height: 16),
         _buildDatePicker(_dateOfBirthController,  'Select Date Of Birth', DateTime.now().subtract(const Duration(days: 20 * 365))),
         const SizedBox(height: 16),
-        _buildFormField2(_heightController, 'Height', Icons.height, false, keyboardType: TextInputType.number),
+        _buildFormField2(_heightController, 'Height (m)', Icons.height, false, keyboardType: TextInputType.number),
         const SizedBox(height: 16),
-        _buildFormField2(_weightController, 'Weight', Icons.scale, false, keyboardType: TextInputType.number),
+        _buildFormField2(_weightController, 'Weight (kg)', Icons.scale, false, keyboardType: TextInputType.number),
         
       ],
     );
