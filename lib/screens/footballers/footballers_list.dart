@@ -1,15 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:football_fraternity/env.dart';
 import 'package:football_fraternity/models/footballer.dart';
+import 'package:football_fraternity/services/storage_service.dart';
+import 'package:football_fraternity/widgets/drawer.dart';
 import 'package:football_fraternity/widgets/footballer_card.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
 import 'package:http/http.dart' as http;
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class FootballersListScreen extends StatefulWidget {
@@ -22,12 +24,29 @@ class FootballersListScreen extends StatefulWidget {
 class _FootballersListScreenState extends State<FootballersListScreen> {
   final ScrollController _scrollController = ScrollController();
   int userId = 0;
+  late final StorageService _storageService;
   List<Footballer> footballers = [];
 
   @override
   void initState() {
     super.initState();
     _fetchFootballers();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    final prefs = await SharedPreferences.getInstance();
+    _storageService = StorageService(prefs);
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() {
+    final profile = _storageService.getUserProfile();
+    if (profile != null) {
+      setState(() {
+        userId = profile.id;
+      });
+    }
   }
 
   @override
@@ -385,6 +404,7 @@ class _FootballersListScreenState extends State<FootballersListScreen> {
         elevation: 0,
         centerTitle: !Responsive.isDesktop(context),
       ),
+      drawer: const AppDrawer(),
       body: Responsive.isDesktop(context) 
           ? _buildDesktopLayout()
           : _buildMobileLayout(),

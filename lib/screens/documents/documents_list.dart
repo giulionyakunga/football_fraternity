@@ -1,210 +1,183 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:football_fraternity/env.dart';
 import 'package:football_fraternity/models/document.dart';
+import 'package:football_fraternity/services/storage_service.dart';
 import 'package:football_fraternity/widgets/document_card.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
+import 'package:football_fraternity/widgets/drawer.dart';
+import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-class DocumentsListScreen extends StatelessWidget {
+
+class DocumentsListScreen extends StatefulWidget {
   const DocumentsListScreen({super.key});
 
-  final List<Document> documents = const [
-    Document(
-      id: '1',
-      title: 'Contract Agreement - Kibu Denis',
-      type: 'Contract',
-      date: '2023-05-15',
-      size: '2.5 MB',
-      status: 'Verified',
-      url: '',
-      uploadedBy: 'Admin User',
-    ),
-    Document(
-      id: '2',
-      title: 'Player Registration Form',
-      type: 'Registration',
-      date: '2023-06-20',
-      size: '1.8 MB',
-      status: 'Pending',
-      url: '',
-      uploadedBy: 'Manager',
-    ),
-    Document(
-      id: '3',
-      title: 'Medical Examination Report',
-      type: 'Medical',
-      date: '2023-07-10',
-      size: '3.2 MB',
-      status: 'Verified',
-      url: '',
-      uploadedBy: 'Medical Team',
-    ),
-    Document(
-      id: '4',
-      title: 'ID Verification Document',
-      type: 'Identification',
-      date: '2023-04-05',
-      size: '1.5 MB',
-      status: 'Verified',
-      url: '',
-      uploadedBy: 'Admin User',
-    ),
-    Document(
-      id: '5',
-      title: 'Transfer Certificate',
-      type: 'Transfer',
-      date: '2023-08-15',
-      size: '2.1 MB',
-      status: 'Pending',
-      url: '',
-      uploadedBy: 'Legal Team',
-    ),
-    Document(
-      id: '6',
-      title: 'Financial Agreement',
-      type: 'Financial',
-      date: '2023-03-22',
-      size: '4.7 MB',
-      status: 'Verified',
-      url: '',
-      uploadedBy: 'Finance Department',
-    ),
-    Document(
-      id: '7',
-      title: 'Performance Report Q3',
-      type: 'Report',
-      date: '2023-09-30',
-      size: '2.8 MB',
-      status: 'Rejected',
-      url: '',
-      uploadedBy: 'Analytics Team',
-    ),
-    Document(
-      id: '8',
-      title: 'Insurance Policy Document',
-      type: 'Insurance',
-      date: '2023-02-14',
-      size: '5.1 MB',
-      status: 'Verified',
-      url: '',
-      uploadedBy: 'HR Department',
-    ),
-  ];
+  @override
+  State<DocumentsListScreen> createState() => _DocumentsListScreenState();
+}
 
+class _DocumentsListScreenState extends State<DocumentsListScreen> {
+  final ScrollController _scrollController = ScrollController();
+  int userId = 0;
+  late final StorageService _storageService;
+  List<Document> documents = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDocuments();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    final prefs = await SharedPreferences.getInstance();
+    _storageService = StorageService(prefs);
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() {
+    final profile = _storageService.getUserProfile();
+    if (profile != null) {
+      setState(() {
+        userId = profile.id;
+      });
+    }
+  }
+
+  Future<void> _fetchDocuments() async {
+    try {
+      final Uri uri = Uri.parse('${backend_url}api/documents/');
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        final newItems = jsonList.map((json) => Document.fromJson(json)).toList();
+        setState(() {
+          documents = newItems;
+        });
+      }
+    }  on SocketException catch (e) {
+      debugPrint('Network error occurred:');
+      debugPrint('- Exception type: ${e.runtimeType}');
+      debugPrint('- Message: ${e.message}');
+      
+      if (e.osError != null) {
+        debugPrint('  - Error number (errno): ${e.osError!.errorCode}');
+        debugPrint('  - OS message: ${e.osError!.message}');
+      }
+    }
+  }
+ 
   Widget _buildDesktopLayout(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Document Management',
-                    style: AppStyles.heading1.copyWith(
-                      fontSize: 36,
-                      color: AppColors.primary,
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Document Management',
+                      style: AppStyles.heading1.copyWith(
+                        fontSize: 36,
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Manage all player documents and agreements',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.black54,
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Manage all player documents and agreements',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.black54,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              _buildStatsOverview(),
-            ],
-          ),
-          const SizedBox(height: 40),
-
-          // Controls Section
-          _buildControlsSection(context),
-          const SizedBox(height: 30),
-
-          // Documents Grid
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 24,
-                mainAxisSpacing: 24,
-                childAspectRatio: 0.9,
-              ),
-              itemCount: documents.length,
-              itemBuilder: (context, index) {
-                return DocumentCard(document: documents[index]);
-              },
+                  ],
+                ),
+                _buildStatsOverview(),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 40),
+
+            // Controls Section
+            // _buildControlsSection(context),
+            // const SizedBox(height: 30),
+
+            // Documents Grid - FIXED: Use GridView.count with shrinkWrap
+            GridView.count(
+              shrinkWrap: true, // Important for nested scrolling
+              physics: const NeverScrollableScrollPhysics(), // Prevent nested scrolling conflict
+              crossAxisCount: 3,
+              crossAxisSpacing: 24,
+              mainAxisSpacing: 24,
+              childAspectRatio: 3.5,
+              children: documents.map((document) {
+                return DocumentCard(document: document);
+              }).toList(),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildMobileLayout(BuildContext context) {
-    return Padding(
+    return ListView(
+      controller: _scrollController,
       padding: EdgeInsets.symmetric(
         horizontal: Responsive.isTablet(context) ? 30 : 20,
         vertical: 20,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Section
-          Text(
-            'Document Management',
-            style: AppStyles.heading1.copyWith(
-              fontSize: Responsive.isTablet(context) ? 28 : 24,
-            ),
+      children: [
+        // Header Section
+        Text(
+          'Document Management',
+          style: AppStyles.heading1.copyWith(
+            fontSize: Responsive.isTablet(context) ? 28 : 24,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Manage all player documents and agreements',
-            style: TextStyle(
-              fontSize: Responsive.isTablet(context) ? 16 : 14,
-              color: Colors.black54,
-            ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Manage all player documents and agreements',
+          style: TextStyle(
+            fontSize: Responsive.isTablet(context) ? 16 : 14,
+            color: Colors.black54,
           ),
-          const SizedBox(height: 20),
+        ),
+        const SizedBox(height: 20),
 
-          // Mobile Stats
-          _buildMobileStats(),
-          const SizedBox(height: 20),
+        // Mobile Stats
+        _buildMobileStats(),
+        const SizedBox(height: 20),
 
-          // Controls Section
-          _buildControlsSection(context),
-          const SizedBox(height: 20),
+        // Controls Section
+        // _buildControlsSection(context),
+        // const SizedBox(height: 20),
 
-          // Documents List
-          Expanded(
-            child: ListView.builder(
-              itemCount: documents.length,
-              itemBuilder: (context, index) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: DocumentCard(document: documents[index]),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+        // Documents List
+        ...documents.map((document) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: DocumentCard(document: document),
+        )).toList(),
+      ],
     );
   }
 
   Widget _buildStatsOverview() {
-    final verifiedCount = documents.where((doc) => doc.status == 'Verified').length;
-    final pendingCount = documents.where((doc) => doc.status == 'Pending').length;
-    final rejectedCount = documents.where((doc) => doc.status == 'Rejected').length;
+    final pdfCount = documents.where((doc) => doc.fileType == 'pdf').length;
+    final wordCount = documents.where((doc) => doc.fileType == 'docx').length;
     final totalSize = _calculateTotalSize();
 
     return Card(
@@ -218,9 +191,9 @@ class DocumentsListScreen extends StatelessWidget {
           children: [
             _buildStatItem(documents.length.toString(), 'Total Documents', Icons.folder),
             const SizedBox(width: 30),
-            _buildStatItem(verifiedCount.toString(), 'Verified', Icons.verified, Colors.green),
+            _buildStatItem(pdfCount.toString(), 'PDF', Icons.picture_as_pdf, Colors.green),
             const SizedBox(width: 30),
-            _buildStatItem(pendingCount.toString(), 'Pending', Icons.pending, Colors.orange),
+            _buildStatItem(wordCount.toString(), 'DOCX', Icons.wordpress, Colors.orange),
             const SizedBox(width: 30),
             _buildStatItem(totalSize, 'Total Size', Icons.storage, Colors.blue),
           ],
@@ -230,8 +203,8 @@ class DocumentsListScreen extends StatelessWidget {
   }
 
   Widget _buildMobileStats() {
-    final verifiedCount = documents.where((doc) => doc.status == 'Verified').length;
-    final pendingCount = documents.where((doc) => doc.status == 'Pending').length;
+    final pdfCount = documents.where((doc) => doc.fileType == 'pdf').length;
+    final wordCount = documents.where((doc) => doc.fileType == 'docx').length;
 
     return Card(
       elevation: 4,
@@ -244,8 +217,8 @@ class DocumentsListScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildStatItem(documents.length.toString(), 'Total', Icons.folder),
-            _buildStatItem(verifiedCount.toString(), 'Verified', Icons.verified, Colors.green),
-            _buildStatItem(pendingCount.toString(), 'Pending', Icons.pending, Colors.orange),
+            _buildStatItem(pdfCount.toString(), 'PDF', Icons.picture_as_pdf, Colors.green),
+            _buildStatItem(wordCount.toString(), 'DOCX', Icons.wordpress, Colors.orange),
           ],
         ),
       ),
@@ -461,7 +434,7 @@ class DocumentsListScreen extends StatelessWidget {
             if (Responsive.isDesktop(context))
               ElevatedButton.icon(
                 onPressed: () {
-                  // Navigator.pushNamed(context, '/documents/upload');
+                  context.go('/document-upload');
                 },
                 icon: const Icon(Icons.upload, size: 20),
                 label: const Text('Upload Document'),
@@ -479,10 +452,10 @@ class DocumentsListScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFloatingActionButton() {
+  Widget _buildFloatingActionButton(BuildContext context) {
     return FloatingActionButton(
       onPressed: () {
-        // Navigator.pushNamed(context, '/documents/upload');
+        context.go('/document-upload');
       },
       backgroundColor: AppColors.primary,
       elevation: 4,
@@ -524,16 +497,17 @@ class DocumentsListScreen extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.upload),
               onPressed: () {
-                // Navigator.pushNamed(context, '/documents/upload');
+                context.go('/document-upload');
               },
               tooltip: 'Upload Document',
             ),
         ],
       ),
-      body: Responsive.isDesktop(context) 
+      drawer: const AppDrawer(),
+      body: Responsive.isDesktop(context)
           ? _buildDesktopLayout(context)
           : _buildMobileLayout(context),
-      floatingActionButton: Responsive.isDesktop(context) ? null : _buildFloatingActionButton(),
+      floatingActionButton: _buildFloatingActionButton(context),
     );
   }
 }

@@ -1,48 +1,58 @@
 class Message {
-  final String id;
-  final String senderId;
-  final String senderName;
-  final String receiverId;
-  final String receiverName;
-  final String content;
-  final DateTime sentAt;
-  final bool isRead;
+  final int id;
+  final String clientName;
+  final String email;
+  final String phoneNumber;
+  final String text;
   final String type;
+  final bool isRead;
+  final DateTime createdAt;
 
   const Message({
     required this.id,
-    required this.senderId,
-    required this.senderName,
-    required this.receiverId,
-    required this.receiverName,
-    required this.content,
-    required this.sentAt,
-    required this.isRead,
+    required this.clientName,
+    required this.email,
+    required this.phoneNumber,
+    required this.text,
     required this.type,
+    required this.isRead,
+    required this.createdAt,
   });
 
   // Add copyWith method
   Message copyWith({
-    String? id,
-    String? senderId,
-    String? senderName,
-    String? receiverId,
-    String? receiverName,
-    String? content,
-    DateTime? sentAt,
-    bool? isRead,
+    int? id,
+    String? clientName,
+    String? email,
+    String? phoneNumber,
+    String? text,
     String? type,
+    bool? isRead,
+    DateTime? createdAt,
   }) {
     return Message(
       id: id ?? this.id,
-      senderId: senderId ?? this.senderId,
-      senderName: senderName ?? this.senderName,
-      receiverId: receiverId ?? this.receiverId,
-      receiverName: receiverName ?? this.receiverName,
-      content: content ?? this.content,
-      sentAt: sentAt ?? this.sentAt,
+      clientName: clientName ?? this.clientName,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      text: text ?? this.text,
+      type: text ?? this.type,
       isRead: isRead ?? this.isRead,
-      type: type ?? this.type,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+    // Factory method to create a Footballer from JSON
+  factory Message.fromJson(Map<String, dynamic> json) {
+    return Message(
+      id: json['id'] ?? 0,
+      clientName: json['client_name'] ?? '',
+      email: json['email'] ?? '',
+      phoneNumber: json['phone_number'] ?? '',
+      text: json['text'] ?? '',
+      type: json['type'] ?? 'incoming',
+      isRead: json['is_read'] ?? false,
+      createdAt: DateTime.parse(json['createdAt']),
     );
   }
 }

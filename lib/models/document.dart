@@ -1,47 +1,66 @@
 class Document {
-  final String id;
+  final int id;
+  final int userId;
   final String title;
-  final String type;
-  final String url;
-  final String date;
+  final String documentType;
+  final String fileName;
+  final String fileType;
+  final String fileUrl;
   final String size;
-  final String status;
   final String? description;
-  final String uploadedBy;
+  final DateTime createdAt; 
 
   const Document({
     required this.id,
+    required this.userId,
     required this.title,
-    required this.type,
-    required this.url,
-    required this.date,
+    required this.documentType,
+    required this.fileName,
+    required this.fileType,
+    required this.fileUrl,
+    required this.description,
     required this.size,
-    required this.status,
-    this.description,
-    required this.uploadedBy,
+    required this.createdAt,
   });
 
   Document copyWith({
-    String? id,
+    int? id,
+    int? userId,
     String? title,
-    String? type,
-    String? url,
-    String? date,
-    String? size,
-    String? status,
+    String? documentType,
+    String? fileName,
+    String? fileType,
+    String? fileUrl,
     String? description,
-    String? uploadedBy,
+    String? size,
+    DateTime? createdAt,
   }) {
     return Document(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       title: title ?? this.title,
-      type: type ?? this.type,
-      url: url ?? this.url,
-      date: date ?? this.date,
-      size: size ?? this.size,
-      status: status ?? this.status,
+      documentType: documentType ?? this.documentType,
+      fileName: fileName ?? this.fileName,
+      fileType: fileType ?? this.fileType,
+      fileUrl: fileUrl ?? this.fileUrl,
       description: description ?? this.description,
-      uploadedBy: uploadedBy ?? this.uploadedBy,
+      size: size ?? this.size,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+   factory Document.fromJson(Map<String, dynamic> json) {
+    return Document(
+      id: json['id'] ?? 0,
+      userId: json['user_id'] ?? 0,
+      title: json['title'] ?? '',
+      documentType: json['document_type'] ?? '',
+      fileName: json['file_name'] ?? '',
+      fileType: json['file_type'] ?? '',
+      fileUrl: json['file_url'] ?? '',
+      description: json['description'] ?? '',
+      size: json['size'] ?? '',
+      createdAt: DateTime.parse(json['createdAt']),
     );
   }
 }

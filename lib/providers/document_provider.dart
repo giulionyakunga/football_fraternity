@@ -17,10 +17,10 @@ class DocumentProvider with ChangeNotifier {
   }
 
   List<Document> getDocumentsByType(String type) {
-    return _documents.where((doc) => doc.type == type).toList();
+    return _documents.where((doc) => doc.fileType == type).toList();
   }
 
   List<Document> getUserDocuments(String userId) {
-    return _documents.where((doc) => doc.uploadedBy == userId).toList();
+    return _documents.where((doc) => doc.userId == userId).toList();
   }
 }

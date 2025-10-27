@@ -168,11 +168,11 @@ class _ContactsScreenState extends State<ContactsScreen> {
           _buildNavLink(context, 'About Us', '/about-us'),
           _buildNavLink(context, 'Services', '/services'),
           _buildNavLink(context, 'Contacts', '/contacts'),
-          if(userId != 0)
-          IconButton(
-            icon: const Icon(Icons.account_circle, color: Colors.white),
-            onPressed: () => Navigator.pushNamed(context, '/profile'),
-          ),
+          // if(userId != 0)
+          // IconButton(
+          //   icon: const Icon(Icons.account_circle, color: Colors.white),
+          //   onPressed: () => Navigator.pushNamed(context, '/profile'),
+          // ),
         ],
       ),
     );
@@ -349,12 +349,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             icon: const Icon(Icons.map),
                             label: const Text("Open in Maps"),
                             onPressed: () async {
-                              context.go('https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430');
-
-                              // final url = Uri.parse(Uri.encodeFull("https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430"));
-                              // if (await canLaunchUrl(url)) {
-                              //   await launchUrl(url);
-                              // }
+                              const url = 'https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430';
+                              if (await canLaunch(url)) {
+                                await launch(url);
+                              } else {
+                                throw 'Could not launch $url';
+                              }
                             },
                           ),
 
@@ -465,7 +465,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(15),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -483,7 +483,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Container(
                     height: 200,
                     decoration: BoxDecoration(
@@ -500,7 +500,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             size: 40,
                             color: Colors.grey[500],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 3),
                           Text(
                             'Interactive Map',
                             style: TextStyle(
@@ -514,16 +514,16 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             icon: const Icon(Icons.map),
                             label: const Text("Open in Maps"),
                             onPressed: () async {
-                              context.go('https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430');
-
-                              // final url = Uri.parse(Uri.encodeFull("https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430"));
-                              // if (await canLaunchUrl(url)) {
-                              //   await launchUrl(url);
-                              // }
+                              const url = 'https://www.google.com/maps/search/?api=1&query=-6.778273,39.237430';
+                              if (await canLaunch(url)) {
+                                await launch(url);
+                              } else {
+                                throw 'Could not launch $url';
+                              }
                             },
                           ),
 
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
 
                           ElevatedButton.icon(
                             icon: const Icon(Icons.share),
@@ -544,7 +544,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             },
                           ),
 
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),

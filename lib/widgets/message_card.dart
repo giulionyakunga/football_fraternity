@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:football_fraternity/models/message.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
+import 'package:go_router/go_router.dart';
 
 class MessageCard extends StatelessWidget {
   final Message message;
@@ -19,22 +20,18 @@ class MessageCard extends StatelessWidget {
             color: Colors.white,
           ),
         ),
-        title: Text('From User ${message.senderId}'),
+        title: Text('From User ${message.clientName}'),
         subtitle: Text(
-          message.content.length > 50
-              ? '${message.content.substring(0, 50)}...'
-              : message.content,
+          message.text.length > 50
+              ? '${message.text.substring(0, 50)}...'
+              : message.text,
         ),
         trailing: Text(
-          '${message.sentAt.hour}:${message.sentAt.minute.toString().padLeft(2, '0')}',
+          '${message.createdAt.hour}:${message.createdAt.minute.toString().padLeft(2, '0')}',
           style: const TextStyle(color: Colors.grey),
         ),
         onTap: () {
-          Navigator.pushNamed(
-            context,
-            '/messages/detail',
-            arguments: message,
-          );
+          context.go('/message-details', extra: message);
         },
       ),
     );

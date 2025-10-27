@@ -41,7 +41,7 @@ class Footballer {
     required this.rating,
   });
 
-  // Factory method to create a TicketType from JSON
+  // Factory method to create a Footballer from JSON
   factory Footballer.fromJson(Map<String, dynamic> json) {
     return Footballer(
       id: json['id'] ?? 0,

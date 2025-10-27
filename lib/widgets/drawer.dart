@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:football_fraternity/services/storage_service.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -11,6 +13,28 @@ class AppDrawer extends StatefulWidget {
 
 class _AppDrawerState extends State<AppDrawer> {
   int userId = 0;
+  late final StorageService _storageService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    final prefs = await SharedPreferences.getInstance();
+    _storageService = StorageService(prefs);
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() {
+    final profile = _storageService.getUserProfile();
+    if (profile != null) {
+      setState(() {
+        userId = profile.id;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,18 +98,7 @@ class _AppDrawerState extends State<AppDrawer> {
             onTap: () {
               context.go('/contacts');
             },
-          ),
-          if(userId != 0)
-          ListTile(
-            leading: const Icon(
-              Icons.message,
-              color: Colors.blue
-            ),
-            title: const Text('Messages'),
-            onTap: () {
-              context.go('/messages');
-            },
-          ),
+          ),          
           if(userId != 0)
           Column(
             children: [
@@ -112,34 +125,44 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
               ListTile(
                 leading: const Icon(
-                  Icons.assignment,
-                  color: Colors.green
+                  Icons.message,
+                  color: Colors.blue
                 ),
-                title: const Text('Contracts'),
+                title: const Text('Messages'),
                 onTap: () {
-                  context.go('/contracts');
+                  context.go('/messages');
                 },
               ),
-              ListTile(
-                leading: const Icon(
-                  Icons.gavel,
-                  color: Colors.green
-                ),
-                title: const Text('Legal Cases'),
-                onTap: () {
-                  context.go('/cases');
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.calendar_today,
-                  color: Colors.green
-                ),
-                title: const Text('Appointments'),
-                onTap: () {
-                  context.go('/appointments');
-                },
-              ),
+              // ListTile(
+              //   leading: const Icon(
+              //     Icons.assignment,
+              //     color: Colors.green
+              //   ),
+              //   title: const Text('Contracts'),
+              //   onTap: () {
+              //     context.go('/contracts');
+              //   },
+              // ),
+              // ListTile(
+              //   leading: const Icon(
+              //     Icons.gavel,
+              //     color: Colors.green
+              //   ),
+              //   title: const Text('Legal Cases'),
+              //   onTap: () {
+              //     context.go('/cases');
+              //   },
+              // ),
+              // ListTile(
+              //   leading: const Icon(
+              //     Icons.calendar_today,
+              //     color: Colors.green
+              //   ),
+              //   title: const Text('Appointments'),
+              //   onTap: () {
+              //     context.go('/appointments');
+              //   },
+              // ),
               ListTile(
                 leading: const Icon(
                   Icons.attach_file,
@@ -151,6 +174,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 },
               ),
               const Divider(),
+              if(userId != 0)
               ListTile(
                 leading: const Icon(
                   Icons.exit_to_app,
@@ -158,8 +182,45 @@ class _AppDrawerState extends State<AppDrawer> {
                 ),
                 title: const Text('Logout'),
                 onTap: () {
-                  // Implement logout functionality
-                  Navigator.pop(context);
+                  _storageService.clearUserProfile();
+                  context.go('/login');
+                },
+              ),
+              if(userId == 0)
+              ListTile(
+                leading: const Icon(
+                  Icons.login,
+                  color: Colors.green,
+                ),
+                title: const Text('Login'),
+                onTap: () {
+                  context.go('/login');
+                },
+              ),
+
+
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
+                onPressed: () => context.go('/profile'),
+              ),
+
+
+
+            ],
+          )
+
+          else if(userId == 0)
+          Column(
+            children: [
+              const Divider(),
+              ListTile(
+                leading: const Icon(
+                  Icons.login,
+                  color: Colors.green,
+                ),
+                title: const Text('Login'),
+                onTap: () {
+                  context.go('/login');
                 },
               ),
             ],

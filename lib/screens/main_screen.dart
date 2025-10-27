@@ -32,7 +32,7 @@ class _MainScreenState extends State<MainScreen> {
         preferredSize: Size.fromHeight(80),
         child: Header(),
       ),
-      drawer: const AppDrawer(),
+      drawer: const AppDrawer(), 
       body: _screens[_currentIndex],
       // bottomNavigationBar: BottomNavigationBar(
       //   currentIndex: _currentIndex,

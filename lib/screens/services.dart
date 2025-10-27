@@ -30,11 +30,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
           _buildNavLink(context, 'About Us', '/about-us'),
           _buildNavLink(context, 'Services', '/services'),
           _buildNavLink(context, 'Contacts', '/contacts'),
-          if(userId != 0)
-          IconButton(
-            icon: const Icon(Icons.account_circle, color: Colors.white),
-            onPressed: () => context.go('/profile'),
-          ),
+          // if(userId != 0)
+          // IconButton(
+          //   icon: const Icon(Icons.account_circle, color: Colors.white),
+          //   onPressed: () => context.go('/profile'),
+          // ),
         ],
       ),
     );

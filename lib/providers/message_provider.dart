@@ -19,17 +19,17 @@ class MessageProvider with ChangeNotifier {
     }
   }
 
-  List<Message> getUserMessages(String userId) {
-    return _messages
-        .where((m) => m.senderId == userId || m.receiverId == userId)
-        .toList();
-  }
+  // List<Message> getUserMessages(String userId) {
+  //   return _messages
+  //       .where((m) => m.senderId == userId || m.receiverId == userId)
+  //       .toList();
+  // }
 
-  List<Message> getConversation(String user1Id, String user2Id) {
-    return _messages
-        .where((m) =>
-            (m.senderId == user1Id && m.receiverId == user2Id) ||
-            (m.senderId == user2Id && m.receiverId == user1Id))
-        .toList();
-  }
+  // List<Message> getConversation(String user1Id, String user2Id) {
+  //   return _messages
+  //       .where((m) =>
+  //           (m.senderId == user1Id && m.receiverId == user2Id) ||
+  //           (m.senderId == user2Id && m.receiverId == user1Id))
+  //       .toList();
+  // }
 }

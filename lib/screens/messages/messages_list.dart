@@ -1,282 +1,256 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:football_fraternity/env.dart';
 import 'package:football_fraternity/models/message.dart';
+import 'package:football_fraternity/services/storage_service.dart';
+import 'package:football_fraternity/widgets/drawer.dart';
 import 'package:football_fraternity/widgets/message_card.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-class MessagesListScreen extends StatelessWidget {
-  MessagesListScreen({super.key});
+class MessagesListScreen extends StatefulWidget {
+  const MessagesListScreen({super.key});
 
-  final List<Message> messages = [
-    Message(
-      id: '1',
-      senderId: '2',
-      senderName: 'Kibu Denis',
-      receiverId: '1',
-      receiverName: 'Legal Team',
-      content: 'Hello, I would like to discuss my contract renewal. When would be a good time to meet? I have some questions about the terms and conditions.',
-      sentAt: DateTime(2023, 7, 10, 14, 30),
-      isRead: true,
-      type: 'incoming',
-    ),
-    Message(
-      id: '2',
-      senderId: '3',
-      senderName: 'Sarah Johnson',
-      receiverId: '1',
-      receiverName: 'Legal Team',
-      content: 'Regarding the transfer negotiation, we have received an offer from the club. Please review the details and let me know your thoughts.',
-      sentAt: DateTime(2023, 7, 8, 10, 15),
-      isRead: false,
-      type: 'incoming',
-    ),
-    Message(
-      id: '3',
-      senderId: '1',
-      senderName: 'Legal Team',
-      receiverId: '4',
-      receiverName: 'Yazid Alpha',
-      content: 'Thank you for your inquiry. We have scheduled your appointment for next Tuesday at 2 PM. Please bring all relevant documents.',
-      sentAt: DateTime(2023, 7, 5, 16, 45),
-      isRead: true,
-      type: 'outgoing',
-    ),
-    Message(
-      id: '4',
-      senderId: '5',
-      senderName: 'John Bocco',
-      receiverId: '1',
-      receiverName: 'Legal Team',
-      content: 'I need urgent legal advice regarding my contract termination. Can we schedule a call today?',
-      sentAt: DateTime(2023, 7, 4, 9, 20),
-      isRead: true,
-      type: 'incoming',
-    ),
-    Message(
-      id: '5',
-      senderId: '1',
-      senderName: 'Legal Team',
-      receiverId: '6',
-      receiverName: 'Thomas Ulimwengu',
-      content: 'Your contract review is complete. We have identified several areas that need attention. When can we discuss?',
-      sentAt: DateTime(2023, 7, 3, 11, 30),
-      isRead: true,
-      type: 'outgoing',
-    ),
-    Message(
-      id: '6',
-      senderId: '7',
-      senderName: 'David Mwantika',
-      receiverId: '1',
-      receiverName: 'Legal Team',
-      content: 'Following up on our previous discussion about image rights. Do you have any updates?',
-      sentAt: DateTime(2023, 7, 2, 15, 10),
-      isRead: false,
-      type: 'incoming',
-    ),
-    Message(
-      id: '7',
-      senderId: '1',
-      senderName: 'Legal Team',
-      receiverId: '8',
-      receiverName: 'Mbwana Samatta',
-      content: 'The transfer documents are ready for your review. Please let me know when you\'re available to go through them.',
-      sentAt: DateTime(2023, 7, 1, 13, 25),
-      isRead: true,
-      type: 'outgoing',
-    ),
-  ];
+  @override
+  State<MessagesListScreen> createState() => _MessagesListScreenState();
+}
+
+class _MessagesListScreenState extends State<MessagesListScreen> {
+  final ScrollController _scrollController = ScrollController();
+  int userId = 0;
+  late final StorageService _storageService;
+  List<Message> messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMessages();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    final prefs = await SharedPreferences.getInstance();
+    _storageService = StorageService(prefs);
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() {
+    final profile = _storageService.getUserProfile();
+    if (profile != null) {
+      setState(() {
+        userId = profile.id;
+      });
+    }
+  }
+
+  Future<void> _fetchMessages() async {
+    try {
+      final Uri uri = Uri.parse('${backend_url}api/messages/');
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        final newItems = jsonList.map((json) => Message.fromJson(json)).toList();
+        setState(() {
+          messages = newItems;
+        });
+      }
+    }  on SocketException catch (e) {
+      debugPrint('Network error occurred:');
+      debugPrint('- Exception type: ${e.runtimeType}');
+      debugPrint('- Message: ${e.message}');
+      
+      if (e.osError != null) {
+        debugPrint('  - Error number (errno): ${e.osError!.errorCode}');
+        debugPrint('  - OS message: ${e.osError!.message}');
+      }
+    }
+  }
 
   Widget _buildDesktopLayout() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left Column - Conversations List
-          Expanded(
-            flex: 1,
-            child: Column(
-              children: [
-                Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        // Header
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left Column - Conversations List (unchanged)
+            Expanded(
+                flex: 1,
+                child: Column(
+                  children: [
+                    Card(
+                      elevation: 6,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
                           children: [
-                            Text(
-                              'Conversations',
-                              style: AppStyles.heading2.copyWith(fontSize: 20),
+                            // Header
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Conversations',
+                                  style: AppStyles.heading2.copyWith(fontSize: 20),
+                                ),
+                                _buildUnreadBadge(),
+                              ],
                             ),
-                            _buildUnreadBadge(),
+                            const SizedBox(height: 20),
+                            
+                            // // Search and Filters
+                            // _buildSearchSection(),
+                            // const SizedBox(height: 20),
+                            
+                            // Conversation Filters
+                            _buildConversationFilters(),
                           ],
                         ),
-                        const SizedBox(height: 20),
-                        
-                        // Search and Filters
-                        _buildSearchSection(),
-                        const SizedBox(height: 20),
-                        
-                        // Conversation Filters
-                        _buildConversationFilters(),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    
+                    // Quick Actions
+                    _buildQuickActions(),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                
-                // Quick Actions
-                _buildQuickActions(),
-              ],
-            ),
-          ),
+              ),
 
-          const SizedBox(width: 24),
 
-          // Right Column - Messages List
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Section
-                Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Messages',
-                              style: AppStyles.heading1.copyWith(
-                                fontSize: 28,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Communicate with clients and team members',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                        _buildStatsOverview(),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
+            const SizedBox(width: 24),
 
-                // Messages List
-                Expanded(
-                  child: Card(
+            // Right Column - Messages List (FIXED)
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Section
+                  Card(
                     elevation: 6,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: ListView.builder(
-                        itemCount: messages.length,
-                        itemBuilder: (context, index) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                            child: MessageCard(message: messages[index]),
-                          );
-                        },
+                      padding: const EdgeInsets.all(24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Messages',
+                                style: AppStyles.heading1.copyWith(
+                                  fontSize: 28,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Communicate with clients and team members',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                          _buildStatsOverview(),
+                        ],
                       ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 500, // Set a fixed height or use MediaQuery
+                    child: Card(
+                      elevation: 6,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: ListView.builder(
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                              child: MessageCard(message: messages[index]),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildMobileLayout(BuildContext context) {
-    return Padding(
+    return ListView(
+      controller: _scrollController,
       padding: EdgeInsets.symmetric(
         horizontal: Responsive.isTablet(context) ? 30 : 20,
         vertical: 20,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Messages',
-                    style: AppStyles.heading1.copyWith(
-                      fontSize: Responsive.isTablet(context) ? 28 : 24,
-                    ),
+      children: [
+        // Header Section
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Messages',
+                  style: AppStyles.heading1.copyWith(
+                    fontSize: Responsive.isTablet(context) ? 28 : 24,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Communicate with clients',
-                    style: TextStyle(
-                      fontSize: Responsive.isTablet(context) ? 16 : 14,
-                      color: Colors.black54,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Communicate with clients',
+                  style: TextStyle(
+                    fontSize: Responsive.isTablet(context) ? 16 : 14,
+                    color: Colors.black54,
                   ),
-                ],
-              ),
-              _buildUnreadBadge(),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Mobile Stats
-          _buildMobileStats(),
-          const SizedBox(height: 20),
-
-          // Search and Filters
-          _buildSearchSection(),
-          const SizedBox(height: 20),
-
-          // Conversation Filters
-          _buildConversationFilters(),
-          const SizedBox(height: 20),
-
-          // Messages List
-          Expanded(
-            child: ListView.builder(
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: MessageCard(message: messages[index]),
-                );
-              },
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
+            _buildUnreadBadge(),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Mobile Stats
+        _buildMobileStats(),
+        const SizedBox(height: 20),
+
+        // Conversation Filters
+        _buildConversationFilters(),
+        const SizedBox(height: 20),
+
+        // Messages List as part of the main ListView
+        ...messages.map((message) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: MessageCard(message: message),
+        )).toList(),
+      ],
     );
   }
 
@@ -593,6 +567,7 @@ class MessagesListScreen extends StatelessWidget {
             ),
         ],
       ),
+      drawer: const AppDrawer(),
       body: Responsive.isDesktop(context) 
           ? _buildDesktopLayout()
           : _buildMobileLayout(context),

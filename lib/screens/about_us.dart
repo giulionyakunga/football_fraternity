@@ -31,11 +31,11 @@ class _AboutUsScreenState extends State<AboutUsScreen> {
           _buildNavLink(context, 'About Us', '/about-us'),
           _buildNavLink(context, 'Services', '/services'),
           _buildNavLink(context, 'Contacts', '/contacts'),
-          if(userId != 0)
-          IconButton(
-            icon: const Icon(Icons.account_circle, color: Colors.white),
-            onPressed: () => Navigator.pushNamed(context, '/profile'),
-          ),
+          // if(userId != 0)
+          // IconButton(
+          //   icon: const Icon(Icons.account_circle, color: Colors.white),
+          //   onPressed: () => Navigator.pushNamed(context, '/profile'),
+          // ),
         ],
       ),
     );

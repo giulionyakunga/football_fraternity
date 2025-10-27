@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:football_fraternity/screens/services.dart';
+import 'package:football_fraternity/services/storage_service.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,6 +16,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int userId = 0;
+  late final StorageService _storageService;
+
+  
   final List<String> slideImages = [
     'assets/images/stadium1.jpg',
     'assets/images/stadium2.jpg',
@@ -27,11 +31,28 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeServices();
+
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       setState(() {
         _currentSlide = (_currentSlide + 1) % slideImages.length;
       });
     });
+  }
+
+  Future<void> _initializeServices() async {
+    final prefs = await SharedPreferences.getInstance();
+    _storageService = StorageService(prefs);
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() {
+    final profile = _storageService.getUserProfile();
+    if (profile != null) {
+      setState(() {
+        userId = profile.id;
+      });
+    }
   }
 
   @override
@@ -54,12 +75,12 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildNavLink(context, 'Home', '/'),
           _buildNavLink(context, 'About Us', '/about-us'),
           _buildNavLink(context, 'Services', '/services'),
-          _buildNavLink(context, 'Contacts', '/contacts'),
-          if(userId != 0)
-          IconButton(
-            icon: const Icon(Icons.account_circle, color: Colors.white),
-            onPressed: () => context.go('/profile'),
-          ),
+          _buildNavLink(context, 'Contacts', '/contacts'),          
+          // if(userId != 0)
+          // IconButton(
+          //   icon: const Icon(Icons.account_circle, color: Colors.white),
+          //   onPressed: () => context.go('/profile'),
+          // ),
         ],
       ),
     );
@@ -163,7 +184,6 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  // Navigate to contact page
                   context.go('/contacts');
                 },
                 style: ElevatedButton.styleFrom(
@@ -258,7 +278,6 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  // Navigate to contact page
                   context.go('/contacts');
                 },
                 style: ElevatedButton.styleFrom(

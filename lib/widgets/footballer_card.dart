@@ -14,7 +14,7 @@ class FootballerCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
         onTap: () {
-          context.go('/footballer-detail', extra: footballer);
+          context.go('/footballer-details', extra: footballer);
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

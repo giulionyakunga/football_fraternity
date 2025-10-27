@@ -1,193 +1,243 @@
 import 'package:flutter/material.dart';
 import 'package:football_fraternity/models/message.dart';
+import 'package:football_fraternity/services/storage_service.dart';
 import 'package:football_fraternity/utils/app_colors.dart';
 import 'package:football_fraternity/utils/app_styles.dart';
 import 'package:football_fraternity/utils/responsive.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class MessageDetailScreen extends StatelessWidget {
+class MessageDetailsScreen extends StatefulWidget {
   final Message message;
+  const MessageDetailsScreen({super.key, required this.message});
 
-  const MessageDetailScreen({super.key, required this.message});
+  @override
+  State<MessageDetailsScreen> createState() => _MessageDetailsScreenState(); 
+}
 
+class _MessageDetailsScreenState extends State<MessageDetailsScreen> {
+  late Message message;
+  int userId = 0;
+  late final StorageService _storageService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeServices();
+    message = widget.message;
+  }
+
+  Future<void> _initializeServices() async {
+    final prefs = await SharedPreferences.getInstance();
+    _storageService = StorageService(prefs);
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() {
+    final profile = _storageService.getUserProfile();
+    if (profile != null) {
+      setState(() {
+        userId = profile.id;
+      });
+    }
+  }
+  
   Widget _buildDesktopLayout(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left Column - Message Info and Quick Actions
-          Expanded(
-            flex: 1,
-            child: Column(
-              children: [
-                Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(30),
-                    child: Column(
-                      children: [
-                        // Message Header
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left Column - Message Info and Quick Actions
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  Card(
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(30),
+                      child: Column(
+                        children: [
+                          // Message Header
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  message.type == 'outgoing' 
+                                      ? Icons.outgoing_mail 
+                                      : Icons.inbox,
+                                  color: AppColors.primary,
+                                  size: 32,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Message #${message.id}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      Text(
+                                        message.type == 'outgoing' ? 'Outgoing' : 'Incoming',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: Row(
+                          const SizedBox(height: 20),
+                          
+                          // Status and Quick Info
+                          _buildMessageStatus(),
+                          const SizedBox(height: 25),
+                          
+                          // Quick Actions
+                          _buildQuickActions(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Conversation Thread
+                  // _buildConversationThread(),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 40),
+
+            // Right Column - Message Content and Details
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Message Header
+                  Card(
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(30),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Icon(
-                                message.type == 'outgoing' 
-                                    ? Icons.outgoing_mail 
-                                    : Icons.inbox,
-                                color: AppColors.primary,
-                                size: 32,
-                              ),
-                              const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Message #${message.id}',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                                      message.type == 'outgoing'
+                                          ? 'To: Admin'
+                                          : 'From: ${message.clientName}',
+                                      style: AppStyles.heading1.copyWith(
+                                        fontSize: 24,
+                                        color: AppColors.primary,
                                       ),
                                     ),
+                                    const SizedBox(height: 8),
                                     Text(
-                                      message.type == 'outgoing' ? 'Outgoing' : 'Incoming',
+                                      'Phone Number: ${message.phoneNumber}',
                                       style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: 16,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Email: ${message.email}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _formatDateTime(message.createdAt),
+                                      style: TextStyle(
+                                        fontSize: 16,
                                         color: Colors.grey[600],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                              _buildMessageTypeBadge(),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        
-                        // Status and Quick Info
-                        _buildMessageStatus(),
-                        const SizedBox(height: 25),
-                        
-                        // Quick Actions
-                        _buildQuickActions(),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                
-                // Conversation Thread
-                _buildConversationThread(),
-              ],
+                  const SizedBox(height: 30),
+
+                  // Message Content
+                  Card(
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(30),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionHeader(context, 'Message Content', Icons.message),
+                          const SizedBox(height: 20),
+                          _buildMessageContent(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Message Details
+                  Card(
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(30),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionHeader(context, 'Message Details', Icons.info),
+                          const SizedBox(height: 20),
+                          _buildDesktopDetailsGrid(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-
-          const SizedBox(width: 40),
-
-          // Right Column - Message Content and Details
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Message Header
-                Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(30),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    message.type == 'outgoing'
-                                        ? 'To: ${message.receiverName ?? 'User ${message.receiverId}'}'
-                                        : 'From: ${message.senderName ?? 'User ${message.senderId}'}',
-                                    style: AppStyles.heading1.copyWith(
-                                      fontSize: 24,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _formatDateTime(message.sentAt),
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _buildMessageTypeBadge(),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Message Content
-                Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(30),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader(context, 'Message Content', Icons.message),
-                        const SizedBox(height: 20),
-                        _buildMessageContent(),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Message Details
-                Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(30),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader(context, 'Message Details', Icons.info),
-                        const SizedBox(height: 20),
-                        _buildDesktopDetailsGrid(),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -228,14 +278,28 @@ class MessageDetailScreen extends StatelessWidget {
                           children: [
                             Text(
                               message.type == 'outgoing'
-                                  ? 'To: ${message.receiverName ?? 'User ${message.receiverId}'}'
-                                  : 'From: ${message.senderName ?? 'User ${message.senderId}'}',
+                                  ? 'To: Admin'
+                                  : 'From: ${message.clientName}',
                               style: AppStyles.heading1.copyWith(
                                 fontSize: Responsive.isTablet(context) ? 22 : 20,
                               ),
                             ),
                             Text(
-                              _formatDateTime(message.sentAt),
+                              'Phone: ${message.phoneNumber}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              'Email: ${message.email}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              _formatDateTime(message.createdAt),
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -256,8 +320,8 @@ class MessageDetailScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Conversation Thread
-          _buildConversationThread(),
-          const SizedBox(height: 20),
+          // _buildConversationThread(),
+          // const SizedBox(height: 20),
 
           // Message Content
           Card(
@@ -404,7 +468,7 @@ class MessageDetailScreen extends StatelessWidget {
         border: Border.all(color: Colors.grey[200]!),
       ),
       child: Text(
-        message.content,
+        message.text,
         style: const TextStyle(
           fontSize: 15,
           color: Colors.black87,
@@ -423,11 +487,11 @@ class MessageDetailScreen extends StatelessWidget {
       crossAxisSpacing: 20,
       mainAxisSpacing: 15,
       children: [
-        _buildDetailItem('Message ID', message.id, Icons.numbers),
-        _buildDetailItem('Sender', message.senderName ?? 'User ${message.senderId}', Icons.person),
-        _buildDetailItem('Receiver', message.receiverName ?? 'User ${message.receiverId}', Icons.person_outline),
-        _buildDetailItem('Sent Date', _formatDate(message.sentAt), Icons.calendar_today),
-        _buildDetailItem('Sent Time', _formatTime(message.sentAt), Icons.access_time),
+        _buildDetailItem('Message ID', '${message.id}', Icons.numbers),
+        _buildDetailItem('Sender', message.clientName, Icons.person),
+        _buildDetailItem('Receiver', 'Admin', Icons.person_outline),
+        _buildDetailItem('Sent Date', _formatDate(message.createdAt), Icons.calendar_today),
+        _buildDetailItem('Sent Time', _formatTime(message.createdAt), Icons.access_time),
         _buildDetailItem('Message Type', message.type == 'outgoing' ? 'Outgoing' : 'Incoming', Icons.send),
       ],
     );
@@ -436,15 +500,15 @@ class MessageDetailScreen extends StatelessWidget {
   Widget _buildMobileDetailsList() {
     return Column(
       children: [
-        _buildDetailItem('Message ID', message.id, Icons.numbers),
+        _buildDetailItem('Message ID', '${message.id}', Icons.numbers),
         const SizedBox(height: 12),
-        _buildDetailItem('Sender', message.senderName ?? 'User ${message.senderId}', Icons.person),
+        _buildDetailItem('Sender', message.clientName, Icons.person),
         const SizedBox(height: 12),
-        _buildDetailItem('Receiver', message.receiverName ?? 'User ${message.receiverId}', Icons.person_outline),
+        _buildDetailItem('Receiver', 'Admin', Icons.person_outline),
         const SizedBox(height: 12),
-        _buildDetailItem('Sent Date', _formatDate(message.sentAt), Icons.calendar_today),
+        _buildDetailItem('Sent Date', _formatDate(message.createdAt), Icons.calendar_today),
         const SizedBox(height: 12),
-        _buildDetailItem('Sent Time', _formatTime(message.sentAt), Icons.access_time),
+        _buildDetailItem('Sent Time', _formatTime(message.createdAt), Icons.access_time),
       ],
     );
   }
